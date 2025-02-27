@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { FiMenu, FiUser, FiClipboard, FiSettings, FiBarChart, FiLogOut } from "react-icons/fi";
 import "bootstrap/dist/css/bootstrap.min.css";
 import AddUsers from "./Addusers"; // Import AddUsers component
-import UserView  from "./Usersview";
-
+import UserView from "./Usersview";
+import LeaveRequest from "./LeaveRequest"; // Import LeaveRequest component
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -111,8 +111,8 @@ const AdminDashboard = () => {
           {activeTab === "dashboard" && <h3>Welcome to the Admin Dashboard</h3>}
           {activeTab === "users" && <h3>Manage Users Section</h3>}
           {activeTab === "addUser" && <AddUsers />} {/* AddUsers Component Rendered Here */}
-          {activeTab === "viewUsers" && <UserView/>} {/* View Users Section */}
-          {activeTab === "leaves" && <h3>Leave Requests Section</h3>}
+          {activeTab === "viewUsers" && <UserView />} {/* View Users Section */}
+          {activeTab === "leaves" && <LeaveRequest />} {/* Leave Request Component Rendered Here */}
           {activeTab === "reports" && <h3>Reports & Analytics Section</h3>}
           {activeTab === "settings" && <h3>Settings Section</h3>}
         </div>

@@ -13,17 +13,22 @@ const UserAdd = () => {
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword((prevState) => !prevState);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const { fullName, lastName, contact, username, password, role } = formData;
-      const response = await axios.post("http://localhost:8000/api/register", {
+      await axios.post("http://localhost:8000/api/register", {
         fullName,
         lastName,
         contact,
@@ -32,9 +37,14 @@ const UserAdd = () => {
         role,
       });
 
-      setSuccess(response.data.message);
+      const message =
+        role === "employee"
+          ? "Employee created successfully"
+          : "Admin created successfully";
+
+      setSuccess(message);
       setError("");
-      window.alert(response.data.message);
+      window.alert(message);
       setFormData({
         fullName: "",
         lastName: "",
@@ -44,7 +54,10 @@ const UserAdd = () => {
         role: "employee",
       });
     } catch (error) {
-      setError(error.response?.data?.message || "An error occurred. Please try again.");
+      setError(
+        error.response?.data?.message ||
+          "An error occurred. Please try again."
+      );
       setSuccess("");
     }
   };
@@ -65,7 +78,6 @@ const UserAdd = () => {
                 { label: "Last Name", name: "lastName", type: "text" },
                 { label: "Contact", name: "contact", type: "text" },
                 { label: "Username", name: "username", type: "text" },
-                { label: "Password", name: "password", type: "password" },
               ].map((field, index) => (
                 <div className="col-md-6" key={index}>
                   <div className="form-floating">
@@ -81,6 +93,33 @@ const UserAdd = () => {
                   </div>
                 </div>
               ))}
+
+              {/* Password Field with Show/Hide Toggle */}
+              <div className="col-md-6">
+                <div className="form-floating position-relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="form-control rounded-3"
+                    required
+                  />
+                  <label>Password</label>
+                  <button
+                    type="button"
+                    onClick={togglePasswordVisibility}
+                    className="btn btn-sm btn-outline-secondary position-absolute"
+                    style={{
+                      top: "50%",
+                      right: "10px",
+                      transform: "translateY(-50%)",
+                    }}
+                  >
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
+              </div>
 
               <div className="col-md-6">
                 <div className="form-floating">
@@ -98,13 +137,20 @@ const UserAdd = () => {
               </div>
             </div>
 
-            <button type="submit" className="btn btn-primary w-100 mt-4 fw-semibold rounded-3">
+            <button
+              type="submit"
+              className="btn btn-primary w-100 mt-4 fw-semibold rounded-3"
+            >
               Add User
             </button>
           </form>
 
-          {error && <div className="alert alert-danger mt-3 text-center">{error}</div>}
-          {success && <div className="alert alert-success mt-3 text-center">{success}</div>}
+          {error && (
+            <div className="alert alert-danger mt-3 text-center">{error}</div>
+          )}
+          {success && (
+            <div className="alert alert-success mt-3 text-center">{success}</div>
+          )}
         </div>
       </div>
     </div>
