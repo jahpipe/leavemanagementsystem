@@ -12,10 +12,16 @@ const db = mysql.createPool({
     port: '3306'
 });
 
-// Register User Route
-router.post('/', async (req, res) => {  // 👈 Make sure the endpoint is `/` because `app.use('/api/register', registerRouter)` already includes `/register`
+// Register Employee Route
+router.post('/', async (req, res) => {
     const { fullName, lastName, contact, username, password, role } = req.body;
     
+    // Validate role (Only "admin" or "employee" allowed)
+    if (!["admin", "employee"].includes(role)) {
+        return res.status(400).json({ message: 'Invalid role. Only "admin" or "employee" are allowed.' });
+    }
+
+    // Validate password length
     if (!password || password.length < 6) {
         return res.status(400).json({ message: 'Password must be at least 6 characters long' });
     }
@@ -23,11 +29,11 @@ router.post('/', async (req, res) => {  // 👈 Make sure the endpoint is `/` be
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
         const query = 'INSERT INTO users (fullName, lastName, contact, username, password, role) VALUES (?, ?, ?, ?, ?, ?)';
-        
+
         await db.query(query, [fullName, lastName, contact, username, hashedPassword, role]);
-        res.status(201).json({ message: 'User registered successfully' });
+        res.status(201).json({ message: 'Employee registered successfully' });
     } catch (err) {
-        console.error('Error during registration:', err);
+        console.error('🔥 Error during registration:', err);
         res.status(500).json({ message: 'Server error' });
     }
 });

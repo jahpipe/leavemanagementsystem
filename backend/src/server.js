@@ -7,7 +7,7 @@ const router = express.Router();
 
 const loginRouter = require('./routes/login/login');
 const registerRouter = require('./routes/register/register');
-const viewemployeRouter = require(`./routes/viewemploye/viewemploye`)
+const viewemployeRouter = require('./routes/viewemploye/viewemploye'); 
 
 // Middleware
 const app = express();

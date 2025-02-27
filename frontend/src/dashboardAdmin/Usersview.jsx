@@ -80,29 +80,30 @@ const UserView = () => {
 
 
   // DELETE user handler
-const handleDelete = async (id) => {
-  const confirmDelete = window.confirm(
-    "Are you sure you want to delete this user? Make sure to double-check their transactions to avoid deleting transactions of users."
-  );
-
-  if (!confirmDelete) {
-    return; // Exit the function if the user cancels
-  }
-
-  try {
-    console.log('Attempting to delete user with ID:', id); // Check if the ID is correct
-
-    const response = await axios.delete(`${import.meta.env.VITE_REACT_APP_BACKEND_BASEURL}/users/${id}`);
-    alert('User deleted successfully');
-
-    // Refresh the user list after deletion
-    const updatedUsers = users.filter(user => user.id !== id);
-    setUsers(updatedUsers);
-  } catch (err) {
-    console.error('Failed to delete user', err.response ? err.response.data : err);
-    alert('Failed to delete user. Please check if this user has any transactions.');
-  }
-};
+  const handleDelete = async (id) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this user? Make sure to double-check their transactions to avoid deleting transactions of users."
+    );
+  
+    if (!confirmDelete) {
+      return; // Exit the function if the user cancels
+    }
+  
+    try {
+      console.log('Attempting to delete user with ID:', id); // Check if the ID is correct
+  
+      const response = await axios.delete(`${import.meta.env.VITE_REACT_APP_BACKEND_BASEURL}/users/${id}`);
+      alert('User deleted successfully');
+  
+      // Refresh the user list after deletion
+      const updatedUsers = users.filter(user => user.id !== id);
+      setUsers(updatedUsers);
+    } catch (err) {
+      console.error('Failed to delete user', err.response ? err.response.data : err);
+      alert('Failed to delete user. Please check if this user has any transactions.');
+    }
+  };
+  
 
   
 

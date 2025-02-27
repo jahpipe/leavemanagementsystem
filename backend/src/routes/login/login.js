@@ -1,13 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const mysql = require('mysql2/promise');
+const bcrypt = require('bcrypt');
 
 // Create MySQL connection pool
 const db = mysql.createPool({
     host: 'localhost',
     user: 'root',
     password: '',
-    database: 'leave_db',  
+    database: 'leave_db',
     port: '3306'
 });
 
@@ -16,10 +17,9 @@ router.post('/', async (req, res) => {
         const { username, password, role } = req.body;
         console.log('🔍 Login attempt:', { username, role });
 
-        const query = 'SELECT * FROM users WHERE username = ? AND role = ?';
+        // Fetch only necessary fields
+        const query = 'SELECT id, fullName, role, password FROM users WHERE username = ? AND role = ?';
         const [results] = await db.query(query, [username, role]);
-
-        console.log('📌 DB Query Result:', results);
 
         if (results.length === 0) {
             console.log('❌ No user found with provided username and role');
@@ -27,10 +27,17 @@ router.post('/', async (req, res) => {
         }
 
         const user = results[0];
-        console.log('✅ User found:', user);
 
-        // Plain text password comparison (No bcrypt)
-        if (password === user.password) {
+        // Check if the stored password is properly hashed
+        if (!user.password.startsWith("$2b$")) {
+            console.log('❌ Password format invalid (not bcrypt-hashed)');
+            return res.status(400).json({ message: 'Invalid password format' });
+        }
+
+        const match = await bcrypt.compare(password, user.password);
+        console.log('🔑 Password match:', match);
+
+        if (match) {
             res.status(200).json({
                 message: 'Login successful',
                 user: {
