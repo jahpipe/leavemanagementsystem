@@ -9,6 +9,7 @@ const loginRouter = require('./routes/login/login');
 const registerRouter = require('./routes/register/register');
 const viewemployeRouter = require('./routes/viewemploye/viewemploye'); 
 const leaveRouter = require('./routes/leaves/leaves');
+const leaveApprovalRouter = require("./routes/leaveaporval/leaveaproval");
 
 // Middleware
 const app = express();
@@ -36,12 +37,11 @@ db.connect(err => {
 });
 
 // API CONNECTION
-
 app.use('/api/login', loginRouter);
 app.use('/api/register', registerRouter);
 app.use('/users', viewemployeRouter);
 app.use('/api/leave', leaveRouter);
-
+app.use("/api/leaveapproval", leaveApprovalRouter);
 
 
 // Start the server

@@ -58,7 +58,7 @@ const AdminDashboard = () => {
             className="btn btn-dark text-start text-white d-flex align-items-center my-2"
             onClick={() => setManageUsersOpen(!manageUsersOpen)}
           >
-            <FiUser className="me-2" /> <span className={isSidebarOpen ? "d-inline" : "d-none"}>Manage Users</span>
+            <FiUser className="me-2" /> <span className={isSidebarOpen ? "d-inline" : "d-none"}>Manage Employee</span>
           </button>
 
           {manageUsersOpen && (
@@ -67,13 +67,13 @@ const AdminDashboard = () => {
                 className={`btn btn-dark text-white d-block my-2 ${activeTab === "addUser" ? "bg-primary" : ""}`}
                 onClick={() => setActiveTab("addUser")}
               >
-                Add User
+                Add Employee
               </button>
               <button
                 className={`btn btn-dark text-white d-block my-2 ${activeTab === "viewUsers" ? "bg-primary" : ""}`}
                 onClick={() => setActiveTab("viewUsers")}
               >
-                View Users
+                View Employee
               </button>
             </div>
           )}
@@ -82,7 +82,7 @@ const AdminDashboard = () => {
             className={`btn btn-dark text-start text-white d-flex align-items-center my-2 ${activeTab === "leaves" ? "bg-primary" : ""}`}
             onClick={() => setActiveTab("leaves")}
           >
-            <FiClipboard className="me-2" /> <span className={isSidebarOpen ? "d-inline" : "d-none"}>Leave Requests</span>
+            <FiClipboard className="me-2" /> <span className={isSidebarOpen ? "d-inline" : "d-none"}>Leave Request Approval</span>
           </button>
 
           <button

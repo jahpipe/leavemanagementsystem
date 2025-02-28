@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const ApplyForLeave = () => {
   const [formData, setFormData] = useState({
@@ -9,6 +9,16 @@ const ApplyForLeave = () => {
     commutation: "",
     applicantSignature: "",
   });
+
+  const [userId, setUserId] = useState(null); // State to store the logged-in user's ID
+
+  // Fetch the logged-in user's ID (example: from localStorage or context)
+  useEffect(() => {
+    const loggedInUser = JSON.parse(localStorage.getItem("user")); // Assuming user data is stored in localStorage
+    if (loggedInUser && loggedInUser.id) {
+      setUserId(loggedInUser.id);
+    }
+  }, []);
 
   const leaveOptions = [
     "Vacation Leave",
@@ -42,48 +52,54 @@ const ApplyForLeave = () => {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const [inclusiveDatesStart, inclusiveDatesEnd] = formData.inclusiveDates.split(" to ");
-
-  const leaveData = {
-    userId: 1, // Replace with the actual user ID
-    leaveTypes: formData.leaveTypes,
-    leaveDetails: formData.leaveDetails,
-    workingDays: formData.workingDays,
-    inclusiveDatesStart,
-    inclusiveDatesEnd,
-    commutation: formData.commutation,
-    applicantSignature: formData.applicantSignature,
-  };
-
-  try {
-    const response = await fetch("http://localhost:8000/api/leave", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(leaveData),
-    });
-
-    if (response.ok) {
-      alert("Leave application submitted successfully!");
-      setFormData({
-        leaveTypes: [],
-        leaveDetails: "",
-        workingDays: "",
-        inclusiveDates: "",
-        commutation: "",
-        applicantSignature: "",
-      });
-    } else {
-      alert("Failed to submit leave application. Please try again.");
+    if (!userId) {
+      alert("User not logged in. Please log in to submit a leave application.");
+      return;
     }
-  } catch (error) {
-    console.error("Error submitting leave application:", error);
-    alert("An error occurred while submitting the application.");
-  }
-};
+
+    const [inclusiveDatesStart, inclusiveDatesEnd] = formData.inclusiveDates.split(" to ");
+
+    const leaveData = {
+      userId, // Use the logged-in user's ID
+      leaveTypes: formData.leaveTypes,
+      leaveDetails: formData.leaveDetails,
+      workingDays: formData.workingDays,
+      inclusiveDatesStart,
+      inclusiveDatesEnd,
+      commutation: formData.commutation,
+      applicantSignature: formData.applicantSignature,
+    };
+
+    try {
+      const response = await fetch("http://localhost:8000/api/leave", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(leaveData),
+      });
+
+      if (response.ok) {
+        alert("Leave application submitted successfully!");
+        setFormData({
+          leaveTypes: [],
+          leaveDetails: "",
+          workingDays: "",
+          inclusiveDates: "",
+          commutation: "",
+          applicantSignature: "",
+        });
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to submit leave application: ${errorData.message}`);
+      }
+    } catch (error) {
+      console.error("Error submitting leave application:", error);
+      alert("An error occurred while submitting the application.");
+    }
+  };
 
   return (
     <div className="container mt-4" style={{ maxWidth: "800px", margin: "0 auto" }}>
