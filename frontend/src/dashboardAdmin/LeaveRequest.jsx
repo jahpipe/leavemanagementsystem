@@ -56,7 +56,7 @@ const LeaveRequestApproval = () => {
                   <th>Employee Name</th>
                   <th>Leave Types</th>
                   <th>Details</th>
-                  <th>Dates</th>
+                  <th>Dates start and end</th>
                   <th>Action</th>
                 </tr>
               </thead>

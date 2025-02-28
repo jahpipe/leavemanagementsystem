@@ -1,39 +1,32 @@
 import React, { useState, useEffect } from "react";
+import "bootstrap/dist/css/bootstrap.min.css"; // Ensure Bootstrap is imported
 
 const ApplyForLeave = () => {
   const [formData, setFormData] = useState({
     leaveTypes: [],
     leaveDetails: "",
     workingDays: "",
-    inclusiveDates: "",
+    inclusiveDatesStart: "", // Start date
+    inclusiveDatesEnd: "",   // End date
     commutation: "",
     applicantSignature: "",
   });
 
-  const [userId, setUserId] = useState(null); // State to store the logged-in user's ID
+  const [userId, setUserId] = useState(null);
 
-  // Fetch the logged-in user's ID (example: from localStorage or context)
   useEffect(() => {
-    const loggedInUser = JSON.parse(localStorage.getItem("user")); // Assuming user data is stored in localStorage
-    if (loggedInUser && loggedInUser.id) {
+    const loggedInUser = JSON.parse(localStorage.getItem("user"));
+    if (loggedInUser?.id) {
       setUserId(loggedInUser.id);
     }
   }, []);
 
   const leaveOptions = [
-    "Vacation Leave",
-    "Mandatory/Forced Leave",
-    "Sick Leave",
-    "Maternity Leave",
-    "Paternity Leave",
-    "Special Privilege Leave",
-    "Solo Parent Leave",
-    "Study Leave",
-    "10-Day VAWC Leave",
-    "Rehabilitation Privilege",
-    "Special Leave Benefits for Women",
-    "Special Emergency Leave",
-    "Adoption Leave",
+    "Vacation Leave", "Mandatory/Forced Leave", "Sick Leave",
+    "Maternity Leave", "Paternity Leave", "Special Privilege Leave",
+    "Solo Parent Leave", "Study Leave", "10-Day VAWC Leave",
+    "Rehabilitation Privilege", "Special Leave Benefits for Women",
+    "Special Emergency Leave", "Adoption Leave",
   ];
 
   const handleCheckboxChange = (e) => {
@@ -53,50 +46,33 @@ const ApplyForLeave = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!userId) {
       alert("User not logged in. Please log in to submit a leave application.");
       return;
     }
 
-    const [inclusiveDatesStart, inclusiveDatesEnd] = formData.inclusiveDates.split(" to ");
-
-    const leaveData = {
-      userId, // Use the logged-in user's ID
-      leaveTypes: formData.leaveTypes,
-      leaveDetails: formData.leaveDetails,
-      workingDays: formData.workingDays,
-      inclusiveDatesStart,
-      inclusiveDatesEnd,
-      commutation: formData.commutation,
-      applicantSignature: formData.applicantSignature,
-    };
+    const leaveData = { userId, ...formData };
 
     try {
       const response = await fetch("http://localhost:8000/api/leave", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(leaveData),
       });
 
       if (response.ok) {
         alert("Leave application submitted successfully!");
         setFormData({
-          leaveTypes: [],
-          leaveDetails: "",
-          workingDays: "",
-          inclusiveDates: "",
-          commutation: "",
-          applicantSignature: "",
+          leaveTypes: [], leaveDetails: "", workingDays: "",
+          inclusiveDatesStart: "", inclusiveDatesEnd: "",
+          commutation: "", applicantSignature: "",
         });
       } else {
         const errorData = await response.json();
-        alert(`Failed to submit leave application: ${errorData.message}`);
+        alert(`Failed to submit: ${errorData.message}`);
       }
     } catch (error) {
-      console.error("Error submitting leave application:", error);
+      console.error("Error:", error);
       alert("An error occurred while submitting the application.");
     }
   };
@@ -106,11 +82,11 @@ const ApplyForLeave = () => {
       <h4 className="text-center mb-4 fw-bold">Application for Leave</h4>
       <form onSubmit={handleSubmit}>
         <div className="mb-3">
-          <label className="form-label fw-bold">6.A TYPE OF LEAVE TO BE AVAILED OF</label>
+          <label className="form-label fw-bold">6.A TYPE OF LEAVE</label>
           <div className="row row-cols-1 row-cols-md-4 g-1">
             {leaveOptions.map((option, index) => (
               <div key={index} className="col">
-                <div className="form-check" style={{ fontSize: "0.7rem" }}>
+                <div className="form-check" style={{ fontSize: "0.8rem" }}>
                   <input
                     className="form-check-input"
                     type="checkbox"
@@ -118,7 +94,7 @@ const ApplyForLeave = () => {
                     onChange={handleCheckboxChange}
                     checked={formData.leaveTypes.includes(option)}
                   />
-                  <label className="form-check-label fw-bold">{option}</label>
+                  <label className="form-check-label">{option}</label>
                 </div>
               </div>
             ))}
@@ -150,13 +126,29 @@ const ApplyForLeave = () => {
               style={{ fontSize: "0.8rem", padding: "5px" }}
             />
           </div>
-          <div className="col-md-3">
-            <label className="form-label fw-bold">INCLUSIVE DATES</label>
+        </div>
+
+        {/* Inclusive Dates Section with Bootstrap Alignment */}
+        <div className="row mb-3 g-2">
+          <div className="col-md-6">
+            <label className="form-label fw-bold">INCLUSIVE DATES START</label>
             <input
               type="date"
               className="form-control"
-              name="inclusiveDates"
-              value={formData.inclusiveDates}
+              name="inclusiveDatesStart"
+              value={formData.inclusiveDatesStart}
+              onChange={handleChange}
+              required
+              style={{ fontSize: "0.8rem", padding: "5px" }}
+            />
+          </div>
+          <div className="col-md-6">
+            <label className="form-label fw-bold">INCLUSIVE DATES END</label>
+            <input
+              type="date"
+              className="form-control"
+              name="inclusiveDatesEnd"
+              value={formData.inclusiveDatesEnd}
               onChange={handleChange}
               required
               style={{ fontSize: "0.8rem", padding: "5px" }}
@@ -164,10 +156,11 @@ const ApplyForLeave = () => {
           </div>
         </div>
 
+        {/* Commutation Options */}
         <div className="mb-3">
           <label className="form-label fw-bold">6.D COMMUTATION</label>
           {["Not Requested", "Requested"].map((option, index) => (
-            <div key={index} className="form-check" style={{ fontSize: "0.75rem" }}>
+            <div key={index} className="form-check" style={{ fontSize: "0.8rem" }}>
               <input
                 className="form-check-input"
                 type="radio"
@@ -180,6 +173,8 @@ const ApplyForLeave = () => {
             </div>
           ))}
         </div>
+
+        {/* Submit Button */}
         <button type="submit" className="btn btn-primary w-100" style={{ fontSize: "0.9rem" }}>
           Submit Application
         </button>
