@@ -10,6 +10,8 @@ const registerRouter = require('./routes/register/register');
 const viewemployeRouter = require('./routes/viewemploye/viewemploye'); 
 const leaveRouter = require('./routes/leaves/leaves');
 const leaveApprovalRouter = require("./routes/leaveaporval/leaveaproval");
+const leaverequestRouter = require('./routes/leaverequest/leaverequest')
+
 
 // Middleware
 const app = express();
@@ -42,7 +44,7 @@ app.use('/api/register', registerRouter);
 app.use('/users', viewemployeRouter);
 app.use('/api/leave', leaveRouter);
 app.use("/api/leaveapproval", leaveApprovalRouter);
-
+app.use('api/leaverequest', leaverequestRouter)
 
 // Start the server
 const PORT = process.env.PORT || 8000;

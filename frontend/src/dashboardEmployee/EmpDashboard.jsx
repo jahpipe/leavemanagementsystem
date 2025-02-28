@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { FaHome, FaPaperPlane, FaList, FaBalanceScale, FaCog, FaSignOutAlt, FaBars, FaTimes } from "react-icons/fa";
 import ApplyForLeave from "./ApplyForLeave";
+import MyleaveRequest from "./MyleaveRequest";
 
 const EmployeeDashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -89,15 +90,7 @@ const EmployeeDashboard = () => {
 
         {activeTab === "apply" && <ApplyForLeave />} 
 
-        {activeTab === "requests" && (
-          <div>
-            <h2>My Leave Requests</h2>
-            <ul className="list-group mt-3">
-              <li className="list-group-item">Leave request #1 - Pending</li>
-              <li className="list-group-item">Leave request #2 - Approved</li>
-            </ul>
-          </div>
-        )}
+        {activeTab === "requests" && <MyleaveRequest/>}
 
         {activeTab === "balance" && (
           <div>

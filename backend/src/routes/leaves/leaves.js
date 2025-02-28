@@ -63,4 +63,35 @@ router.post("/", (req, res) => {
   );
 });
 
+// Fetch leave requests for a specific user
+router.get("/requests/:userId", (req, res) => {
+  const { userId } = req.params;
+
+  const query = `
+    SELECT * FROM leave_applications WHERE user_id = ?
+  `;
+
+  db.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error("Error fetching leave requests:", err);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+    
+    // Return the data in a JSON format
+    const leaveRequests = results.map(request => ({
+      leaveTypes: JSON.parse(request.leave_types), // parse the JSON string
+      leaveDetails: request.leave_details,
+      workingDays: request.working_days,
+      inclusiveDatesStart: request.inclusive_dates_start,
+      inclusiveDatesEnd: request.inclusive_dates_end,
+      commutation: request.commutation,
+      applicantSignature: request.applicant_signature,
+      status: request.status, // Include the status
+    }));
+
+    res.status(200).json(leaveRequests);
+  });
+});
+
+
 module.exports = router;
