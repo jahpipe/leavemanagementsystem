@@ -54,7 +54,7 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="min-vh-100 d-flex align-items-center justify-content-center bg-dark">
+    <div className="min-vh-100 d-flex flex-column align-items-center justify-content-center bg-dark">
       <div
         className={`card p-4 shadow-lg ${shake ? 'animate-shake' : ''}`}
         style={{ maxWidth: '400px', width: '100%' }}
@@ -143,6 +143,10 @@ const LoginForm = () => {
           {error && <div className="alert alert-danger mt-3">{error}</div>}
         </form>
       </div>
+      {/* Footer */}
+      <footer className="text-white mt-4 text-center">
+        All rights reserved. Powered by Supplies Office Department Intern.
+      </footer>
     </div>
   );
 };

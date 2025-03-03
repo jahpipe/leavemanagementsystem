@@ -10,25 +10,39 @@ const db = mysql.createPool({
   port: "3306",
 });
 
-// ✅ Get all pending leave applications with fullName and lastName
-router.get("/pending", async (req, res) => {
+// ✅ Generic function to fetch leave applications by status with pagination
+const getLeaveApplicationsByStatus = async (status, limit, offset) => {
+  const query = `
+    SELECT la.*, u.fullName, u.lastName 
+    FROM leave_applications la
+    JOIN users u ON la.user_id = u.id
+    WHERE la.status = ?
+    LIMIT ? OFFSET ?
+  `;
+
+  const [results] = await db.query(query, [status, limit, offset]);
+
+  return results.map(item => ({
+    ...item,
+    leave_types: item.leave_types ? JSON.parse(item.leave_types) : [],
+  }));
+};
+
+// ✅ Fetch leave applications with pagination
+router.get("/:status", async (req, res) => {
+  const { status } = req.params;
+  const validStatuses = ["pending", "approved", "rejected"];
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 5;
+  const offset = (page - 1) * limit;
+
+  if (!validStatuses.includes(status.toLowerCase())) {
+    return res.status(400).json({ error: "Invalid status type" });
+  }
+
   try {
-    const query = `
-      SELECT la.*, u.fullName, u.lastName 
-      FROM leave_applications la
-      JOIN users u ON la.user_id = u.id
-      WHERE la.status = 'Pending'
-    `;
-
-    const [results] = await db.query(query);
-
-    // ✅ Ensure leave_types is properly parsed
-    const formattedResults = results.map(item => ({
-      ...item,
-      leave_types: item.leave_types ? JSON.parse(item.leave_types) : [],
-    }));
-
-    res.json(formattedResults);
+    const results = await getLeaveApplicationsByStatus(status.charAt(0).toUpperCase() + status.slice(1), limit, offset);
+    res.json(results);
   } catch (err) {
     console.error("Error fetching leave applications:", err);
     res.status(500).json({ error: "Internal Server Error" });

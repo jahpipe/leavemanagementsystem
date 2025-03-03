@@ -4,6 +4,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { FaHome, FaPaperPlane, FaList, FaBalanceScale, FaCog, FaSignOutAlt, FaBars, FaTimes } from "react-icons/fa";
 import ApplyForLeave from "./ApplyForLeave";
 import MyleaveRequest from "./MyleaveRequest";
+import LeaveCredit from "./LeaveCredit";
 
 const EmployeeDashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -92,13 +93,7 @@ const EmployeeDashboard = () => {
 
         {activeTab === "requests" && <MyleaveRequest/>}
 
-        {activeTab === "balance" && (
-          <div>
-            <h2>Leave Balance</h2>
-            <p>Vacation Leave: 5 days</p>
-            <p>Sick Leave: 3 days</p>
-          </div>
-        )}
+        {activeTab === "balance" &&  <LeaveCredit/> }
 
         {activeTab === "settings" && (
           <div>
