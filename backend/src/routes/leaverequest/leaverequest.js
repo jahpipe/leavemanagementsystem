@@ -1,6 +1,6 @@
 const express = require('express');
 const mysql = require('mysql2/promise');
-const cors = require('cors');  
+const cors = require('cors');
 const app = express();
 const router = express.Router();
 
@@ -94,6 +94,68 @@ router.patch('/api/leave/:id/status', async (req, res) => {
   } catch (err) {
     console.error('Error updating leave request status:', err);
     return res.status(500).json({ message: 'An error occurred while updating the leave request status' });
+  }
+});
+
+// Route to fetch user credit balance
+router.get('/api/users/:userId/credit-balance', async (req, res) => {
+  const { userId } = req.params;
+  const query = 'SELECT credit_balance FROM users WHERE id = ?';
+
+  try {
+    const [results] = await db.query(query, [userId]);
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.status(200).json({ credit_balance: results[0].credit_balance });
+  } catch (err) {
+    console.error('Error fetching user credit balance:', err);
+    return res.status(500).json({ message: 'An error occurred while fetching user credit balance' });
+  }
+});
+
+// Route to submit a leave request and deduct credits
+router.post('/api/leave/requests', async (req, res) => {
+  const { userId, leaveTypes, leaveDetails, workingDays, inclusiveDatesStart, inclusiveDatesEnd, commutation, applicantSignature } = req.body;
+
+  // Calculate the number of days for the leave request
+  const startDate = new Date(inclusiveDatesStart);
+  const endDate = new Date(inclusiveDatesEnd);
+  const timeDiff = endDate - startDate;
+  const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) + 1; // Add 1 to include both start and end dates
+
+  try {
+    // Fetch the user's current credit balance
+    const [user] = await db.query('SELECT credit_balance FROM users WHERE id = ?', [userId]);
+
+    if (user.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const currentBalance = user[0].credit_balance;
+
+    // Check if the user has enough credits for the leave request
+    if (daysDiff > currentBalance) {
+      return res.status(400).json({ message: 'Insufficient credit balance' });
+    }
+
+    // Deduct the credits from the user's balance
+    const newBalance = currentBalance - daysDiff;
+    await db.query('UPDATE users SET credit_balance = ? WHERE id = ?', [newBalance, userId]);
+
+    // Insert the leave request into the database
+    const [result] = await db.query(
+      `INSERT INTO leaveRequests (userId, leaveTypes, leaveDetails, workingDays, inclusiveDatesStart, inclusiveDatesEnd, commutation, applicantSignature, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending')`,
+      [userId, leaveTypes.join(','), leaveDetails, workingDays, inclusiveDatesStart, inclusiveDatesEnd, commutation, applicantSignature]
+    );
+
+    return res.status(201).json({ message: 'Leave request submitted successfully', newBalance });
+  } catch (err) {
+    console.error('Error submitting leave request:', err);
+    return res.status(500).json({ message: 'An error occurred while submitting the leave request' });
   }
 });
 

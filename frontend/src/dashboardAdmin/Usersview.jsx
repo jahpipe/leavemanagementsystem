@@ -61,13 +61,17 @@ const UserView = () => {
       if (!editUser.password) {
         delete updateData.password;
       }
+      // Include credit_balance for employees
+      if (editUser.role === 'employee') {
+        updateData.credit_balance = editUser.credit_balance || 0;
+      }
       await axios.put(
         `${import.meta.env.VITE_REACT_APP_BACKEND_BASEURL}/users/${selectedUser.id}`,
         updateData
       );
       alert('User updated successfully');
       setSelectedUser(null);
-
+  
       // Refresh the user list after update
       const userResponse = await axios.get(`${import.meta.env.VITE_REACT_APP_BACKEND_BASEURL}/users`);
       setUsers(userResponse.data);
@@ -185,6 +189,7 @@ const UserView = () => {
                     <th>Contact</th>
                     <th>Username</th>
                     <th>Role</th>
+                    <th>Credit Balance</th> {/* New Column */}
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -196,6 +201,7 @@ const UserView = () => {
                       <td>{employee.contact}</td>
                       <td>{employee.username}</td>
                       <td>{employee.role}</td>
+                      <td>{employee.credit_balance || 0}</td> {/* Display credit balance */}
                       <td>
                         <button
                           className="btn btn-sm btn-primary me-2"

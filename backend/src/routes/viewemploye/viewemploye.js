@@ -16,7 +16,7 @@ const db = mysql.createPool({
 router.get('/', async (req, res) => {
   try {
     // Fetch all users from the database
-    const [rows] = await db.execute('SELECT id, fullName, lastName, contact, username, role FROM users');
+    const [rows] = await db.execute('SELECT id, fullName, lastName, contact, username, role, credit_balance FROM users');
     
     if (rows.length === 0) {
       return res.status(404).json({ message: 'No users found' });
@@ -34,19 +34,19 @@ router.get('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { fullName, lastName, contact, username, role, password } = req.body;
+    const { fullName, lastName, contact, username, role, password, credit_balance } = req.body;
     let query;
     let params;
 
     // If a new password is provided, hash it and include in update
     if (password && password.trim() !== '') {
       const hashedPassword = await bcrypt.hash(password, 10);
-      query = `UPDATE users SET fullName = ?, lastName = ?, contact = ?, username = ?, role = ?, password = ? WHERE id = ?`;
-      params = [fullName, lastName, contact, username, role, hashedPassword, id];
+      query = `UPDATE users SET fullName = ?, lastName = ?, contact = ?, username = ?, role = ?, password = ?, credit_balance = ? WHERE id = ?`;
+      params = [fullName, lastName, contact, username, role, hashedPassword, credit_balance || 0, id];
     } else {
       // If no new password, update other fields only
-      query = `UPDATE users SET fullName = ?, lastName = ?, contact = ?, username = ?, role = ? WHERE id = ?`;
-      params = [fullName, lastName, contact, username, role, id];
+      query = `UPDATE users SET fullName = ?, lastName = ?, contact = ?, username = ?, role = ?, credit_balance = ? WHERE id = ?`;
+      params = [fullName, lastName, contact, username, role, credit_balance || 0, id];
     }
 
     const [result] = await db.execute(query, params);
