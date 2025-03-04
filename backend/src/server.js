@@ -11,7 +11,7 @@ const viewemployeRouter = require('./routes/viewemploye/viewemploye');
 const leaveRouter = require('./routes/leaves/leaves');
 const leaveApprovalRouter = require("./routes/leaveaporval/leaveaproval");
 const leaverequestRouter = require('./routes/leaverequest/leaverequest');
-const creditbalanceRouter = require('./routes/creditbalance/creditbalance')
+const creditbalanceRouter = require("./routes/creditbalance/creditbalance");
 
 // Middleware
 const app = express();
@@ -45,8 +45,7 @@ app.use('/users', viewemployeRouter);
 app.use('/api/leave', leaveRouter);
 app.use("/api/leaveapproval", leaveApprovalRouter);
 app.use('api/leaverequest', leaverequestRouter);
-app.use('/api/creditbalance', creditbalanceRouter)
-
+app.use("/api/creditbalance", creditbalanceRouter);
 
 // Start the server
 const PORT = process.env.PORT || 8000;

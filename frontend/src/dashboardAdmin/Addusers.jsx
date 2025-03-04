@@ -10,6 +10,7 @@ const UserAdd = () => {
     username: "",
     password: "",
     role: "employee",
+    credit_balance: 0, // Added field
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -27,7 +28,7 @@ const UserAdd = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const { fullName, lastName, contact, username, password, role } = formData;
+      const { fullName, lastName, contact, username, password, role, credit_balance } = formData;
       await axios.post("http://localhost:8000/api/register", {
         fullName,
         lastName,
@@ -35,12 +36,10 @@ const UserAdd = () => {
         username,
         password,
         role,
+        credit_balance, // Sending credit_balance
       });
 
-      const message =
-        role === "employee"
-          ? "Employee created successfully"
-          : "Admin created successfully";
+      const message = role === "employee" ? "Employee created successfully" : "Admin created successfully";
 
       setSuccess(message);
       setError("");
@@ -52,12 +51,10 @@ const UserAdd = () => {
         username: "",
         password: "",
         role: "employee",
+        credit_balance: 0, // Reset field
       });
     } catch (error) {
-      setError(
-        error.response?.data?.message ||
-          "An error occurred. Please try again."
-      );
+      setError(error.response?.data?.message || "An error occurred. Please try again.");
       setSuccess("");
     }
   };
@@ -121,14 +118,25 @@ const UserAdd = () => {
                 </div>
               </div>
 
+              {/* Credit Balance Field */}
               <div className="col-md-6">
                 <div className="form-floating">
-                  <select
-                    name="role"
-                    value={formData.role}
+                  <input
+                    type="number"
+                    name="credit_balance"
+                    value={formData.credit_balance}
                     onChange={handleChange}
-                    className="form-select rounded-3"
-                  >
+                    className="form-control rounded-3"
+                    min="0"
+                    required
+                  />
+                  <label>Credit Balance</label>
+                </div>
+              </div>
+
+              <div className="col-md-6">
+                <div className="form-floating">
+                  <select name="role" value={formData.role} onChange={handleChange} className="form-select rounded-3">
                     <option value="admin">Admin</option>
                     <option value="employee">Employee</option>
                   </select>
@@ -137,20 +145,13 @@ const UserAdd = () => {
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="btn btn-primary w-100 mt-4 fw-semibold rounded-3"
-            >
+            <button type="submit" className="btn btn-primary w-100 mt-4 fw-semibold rounded-3">
               Add User
             </button>
           </form>
 
-          {error && (
-            <div className="alert alert-danger mt-3 text-center">{error}</div>
-          )}
-          {success && (
-            <div className="alert alert-success mt-3 text-center">{success}</div>
-          )}
+          {error && <div className="alert alert-danger mt-3 text-center">{error}</div>}
+          {success && <div className="alert alert-success mt-3 text-center">{success}</div>}
         </div>
       </div>
     </div>

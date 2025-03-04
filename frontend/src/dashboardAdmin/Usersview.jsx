@@ -227,92 +227,106 @@ const UserView = () => {
 
       {/* Bootstrap Modal for Editing User Details */}
       {selectedUser && (
-        <div className="modal fade show" style={{ display: 'block' }} tabIndex="-1">
-          <div className="modal-dialog modal-lg modal-dialog-scrollable">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Edit User Details</h5>
-                <button type="button" className="btn-close" onClick={handleCloseDetails}></button>
-              </div>
-              <div className="modal-body">
-                <form>
-                  <div className="mb-3">
-                    <label className="form-label">Full Name</label>
-                    <input
-                      type="text"
-                      name="fullName"
-                      value={editUser.fullName}
-                      onChange={handleInputChange}
-                      className="form-control"
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Last Name</label>
-                    <input
-                      type="text"
-                      name="lastName"
-                      value={editUser.lastName}
-                      onChange={handleInputChange}
-                      className="form-control"
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Contact</label>
-                    <input
-                      type="text"
-                      name="contact"
-                      value={editUser.contact}
-                      onChange={handleInputChange}
-                      className="form-control"
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Username</label>
-                    <input
-                      type="text"
-                      name="username"
-                      value={editUser.username}
-                      onChange={handleInputChange}
-                      className="form-control"
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Password</label>
-                    <input
-                      type="password"
-                      name="password"
-                      value={editUser.password}
-                      onChange={handleInputChange}
-                      className="form-control"
-                      placeholder="Enter new password (leave empty to keep current)"
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Role</label>
-                    <select
-                      name="role"
-                      value={editUser.role}
-                      onChange={handleInputChange}
-                      className="form-select"
-                    >
-                      <option value="admin">Admin</option>
-                      <option value="employee">Employee</option>
-                    </select>
-                  </div>
-                </form>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={handleCloseDetails}>
-                  Close
-                </button>
-                <button type="button" className="btn btn-primary" onClick={handleSave}>
-                  Save Changes
-                </button>
-              </div>
-            </div>
-          </div>
+  <div className="modal fade show" style={{ display: 'block' }} tabIndex="-1">
+    <div className="modal-dialog modal-lg modal-dialog-scrollable">
+      <div className="modal-content">
+        <div className="modal-header">
+          <h5 className="modal-title">Edit User Details</h5>
+          <button type="button" className="btn-close" onClick={handleCloseDetails}></button>
         </div>
-      )}
+        <div className="modal-body">
+          <form>
+            <div className="mb-3">
+              <label className="form-label">Full Name</label>
+              <input
+                type="text"
+                name="fullName"
+                value={editUser.fullName}
+                onChange={handleInputChange}
+                className="form-control"
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">Last Name</label>
+              <input
+                type="text"
+                name="lastName"
+                value={editUser.lastName}
+                onChange={handleInputChange}
+                className="form-control"
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">Contact</label>
+              <input
+                type="text"
+                name="contact"
+                value={editUser.contact}
+                onChange={handleInputChange}
+                className="form-control"
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">Username</label>
+              <input
+                type="text"
+                name="username"
+                value={editUser.username}
+                onChange={handleInputChange}
+                className="form-control"
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">Password</label>
+              <input
+                type="password"
+                name="password"
+                value={editUser.password}
+                onChange={handleInputChange}
+                className="form-control"
+                placeholder="Enter new password (leave empty to keep current)"
+              />
+            </div>
+            <div className="mb-3">
+              <label className="form-label">Role</label>
+              <select
+                name="role"
+                value={editUser.role}
+                onChange={handleInputChange}
+                className="form-select"
+              >
+                <option value="admin">Admin</option>
+                <option value="employee">Employee</option>
+              </select>
+            </div>
+
+            {editUser.role === 'employee' && (
+              <div className="mb-3">
+                <label className="form-label">Credit Balance</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  name="credit_balance"
+                  value={editUser.credit_balance || 0}
+                  onChange={handleInputChange}
+                  className="form-control"
+                />
+              </div>
+            )}
+          </form>
+        </div>
+        <div className="modal-footer">
+          <button type="button" className="btn btn-secondary" onClick={handleCloseDetails}>
+            Close
+          </button>
+          <button type="button" className="btn btn-primary" onClick={handleSave}>
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };
