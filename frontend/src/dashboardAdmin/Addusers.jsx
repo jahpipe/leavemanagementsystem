@@ -5,12 +5,14 @@ import "bootstrap/dist/css/bootstrap.min.css";
 const UserAdd = () => {
   const [formData, setFormData] = useState({
     fullName: "",
+    middleName: "",
     lastName: "",
     contact: "",
     username: "",
     password: "",
     role: "employee",
-    credit_balance: 0, // Added field
+    position: "",
+    salary: "",
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -28,30 +30,34 @@ const UserAdd = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const { fullName, lastName, contact, username, password, role, credit_balance } = formData;
+      const { fullName, middleName, lastName, contact, username, password, role, position, salary } = formData;
+
       await axios.post("http://localhost:8000/api/register", {
         fullName,
+        middleName,
         lastName,
         contact,
         username,
         password,
         role,
-        credit_balance, // Sending credit_balance
+        position,
+        salary: salary ? parseFloat(salary) : null, // Ensure salary is a number
       });
 
-      const message = role === "employee" ? "Employee created successfully" : "Admin created successfully";
-
-      setSuccess(message);
+      setSuccess("User created successfully");
       setError("");
-      window.alert(message);
+      window.alert("User created successfully");
+
       setFormData({
         fullName: "",
+        middleName: "",
         lastName: "",
         contact: "",
         username: "",
         password: "",
         role: "employee",
-        credit_balance: 0, // Reset field
+        position: "",
+        salary: "",
       });
     } catch (error) {
       setError(error.response?.data?.message || "An error occurred. Please try again.");
@@ -70,28 +76,80 @@ const UserAdd = () => {
 
           <form onSubmit={handleSubmit} className="needs-validation" noValidate>
             <div className="row g-3">
-              {[
-                { label: "Full Name", name: "fullName", type: "text" },
-                { label: "Last Name", name: "lastName", type: "text" },
-                { label: "Contact", name: "contact", type: "text" },
-                { label: "Username", name: "username", type: "text" },
-              ].map((field, index) => (
+              <div className="col-md-4">
+                <div className="form-floating">
+                  <input
+                    type="text"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleChange}
+                    className="form-control rounded-3"
+                    required
+                  />
+                  <label>First Name</label>
+                </div>
+              </div>
+
+              <div className="col-md-4">
+                <div className="form-floating">
+                  <input
+                    type="text"
+                    name="middleName"
+                    value={formData.middleName}
+                    onChange={handleChange}
+                    className="form-control rounded-3"
+                    required
+                  />
+                  <label>Middle Name</label>
+                </div>
+              </div>
+
+              <div className="col-md-4">
+                <div className="form-floating">
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    className="form-control rounded-3"
+                    required
+                  />
+                  <label>Last Name</label>
+                </div>
+              </div>
+
+              {["contact", "username", "position"].map((field, index) => (
                 <div className="col-md-6" key={index}>
                   <div className="form-floating">
                     <input
-                      type={field.type}
-                      name={field.name}
-                      value={formData[field.name]}
+                      type="text"
+                      name={field}
+                      value={formData[field]}
                       onChange={handleChange}
                       className="form-control rounded-3"
                       required
                     />
-                    <label>{field.label}</label>
+                    <label>{field.replace(/([A-Z])/g, " $1").trim()}</label>
                   </div>
                 </div>
               ))}
 
-              {/* Password Field with Show/Hide Toggle */}
+              <div className="col-md-6">
+                <div className="form-floating">
+                  <input
+                    type="number"
+                    name="salary"
+                    value={formData.salary}
+                    onChange={handleChange}
+                    className="form-control rounded-3"
+                    step="0.01"
+                    min="0"
+                    required
+                  />
+                  <label>Salary</label>
+                </div>
+              </div>
+
               <div className="col-md-6">
                 <div className="form-floating position-relative">
                   <input
@@ -107,30 +165,10 @@ const UserAdd = () => {
                     type="button"
                     onClick={togglePasswordVisibility}
                     className="btn btn-sm btn-outline-secondary position-absolute"
-                    style={{
-                      top: "50%",
-                      right: "10px",
-                      transform: "translateY(-50%)",
-                    }}
+                    style={{ top: "50%", right: "10px", transform: "translateY(-50%)" }}
                   >
                     {showPassword ? "Hide" : "Show"}
                   </button>
-                </div>
-              </div>
-
-              {/* Credit Balance Field */}
-              <div className="col-md-6">
-                <div className="form-floating">
-                  <input
-                    type="number"
-                    name="credit_balance"
-                    value={formData.credit_balance}
-                    onChange={handleChange}
-                    className="form-control rounded-3"
-                    min="0"
-                    required
-                  />
-                  <label>Credit Balance</label>
                 </div>
               </div>
 

@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiMenu, FiUser, FiClipboard, FiSettings, FiBarChart, FiLogOut } from "react-icons/fi";
+import { FiMenu, FiUser, FiClipboard, FiSettings, FiBarChart, FiDollarSign, FiLogOut } from "react-icons/fi";
 import "bootstrap/dist/css/bootstrap.min.css";
-import AddUsers from "./Addusers"; // Import AddUsers component
+import AddUsers from "./Addusers"; 
 import UserView from "./Usersview";
-import LeaveRequest from "./LeaveRequest"; // Import LeaveRequest component
+import LeaveRequest from "./LeaveRequest";
+import ManageBalance from "./ManageBalance";
+import Reports from "./Reports";
+import Admin from "./Admin";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -33,7 +36,10 @@ const AdminDashboard = () => {
   return (
     <div className="d-flex vh-100">
       {/* Sidebar */}
-      <div className={`bg-dark text-white d-flex flex-column p-3 ${isSidebarOpen ? "w-250px" : "w-75px"} d-md-flex`}>
+      <div 
+        className={`bg-dark text-white d-flex flex-column p-3 ${isSidebarOpen ? "w-250px" : "w-75px"}`}
+        style={{ overflowY: "auto", height: "100vh" }}
+      >
         <button className="btn btn-outline-light mb-3 d-md-none" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
           <FiMenu />
         </button>
@@ -86,6 +92,13 @@ const AdminDashboard = () => {
           </button>
 
           <button
+            className={`btn btn-dark text-start text-white d-flex align-items-center my-2 ${activeTab === "balance" ? "bg-primary" : ""}`}
+            onClick={() => setActiveTab("balance")}
+          >
+            <FiDollarSign className="me-2" /> <span className={isSidebarOpen ? "d-inline" : "d-none"}>Manage Balance</span>
+          </button>
+
+          <button
             className={`btn btn-dark text-start text-white d-flex align-items-center my-2 ${activeTab === "reports" ? "bg-primary" : ""}`}
             onClick={() => setActiveTab("reports")}
           >
@@ -106,14 +119,15 @@ const AdminDashboard = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-grow-1 bg-light p-4">
+      <div className="flex-grow-1 bg-light p-4" style={{ overflowY: "auto", height: "100vh" }}>
         <div className="mt-4">
-          {activeTab === "dashboard" && <h3>Welcome to the Admin Dashboard</h3>}
+          {activeTab === "dashboard" && <Admin/>}
           {activeTab === "users" && <h3>Manage Users Section</h3>}
-          {activeTab === "addUser" && <AddUsers />} {/* AddUsers Component Rendered Here */}
-          {activeTab === "viewUsers" && <UserView />} {/* View Users Section */}
-          {activeTab === "leaves" && <LeaveRequest />} {/* Leave Request Component Rendered Here */}
-          {activeTab === "reports" && <h3>Reports & Analytics Section</h3>}
+          {activeTab === "addUser" && <AddUsers />}
+          {activeTab === "viewUsers" && <UserView />}
+          {activeTab === "leaves" && <LeaveRequest />}
+          {activeTab === "balance" && <ManageBalance />}
+          {activeTab === "reports" && <Reports/>}
           {activeTab === "settings" && <h3>Settings Section</h3>}
         </div>
       </div>

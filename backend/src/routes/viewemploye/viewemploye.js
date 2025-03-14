@@ -9,20 +9,20 @@ const db = mysql.createPool({
   user: 'root',
   password: '',
   database: 'leave_db',
-  port: '3306'
+  port: '3306',
 });
 
 // GET all users
 router.get('/', async (req, res) => {
   try {
-    // Fetch all users from the database
-    const [rows] = await db.execute('SELECT id, fullName, lastName, contact, username, role, credit_balance FROM users');
-    
+    const [rows] = await db.execute(
+      'SELECT id, fullName, middleName, lastName, contact, username, role, position, salary FROM users'
+    );
+
     if (rows.length === 0) {
       return res.status(404).json({ message: 'No users found' });
     }
-    
-    // Return the users in the response
+
     res.json(rows);
   } catch (err) {
     console.error('Error fetching users:', err);
@@ -30,31 +30,80 @@ router.get('/', async (req, res) => {
   }
 });
 
-// EDIT (update) a user
+// Register Employee Route
+router.post('/', async (req, res) => {
+  const { fullName, middleName, lastName, contact, username, password, role, position, salary } = req.body;
+
+  if (!['admin', 'employee'].includes(role)) {
+    return res.status(400).json({ message: 'Invalid role. Only "admin" or "employee" are allowed.' });
+  }
+
+  if (!password || password.length < 6) {
+    return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+  }
+
+  if (salary !== undefined && (isNaN(salary) || salary < 0)) {
+    return res.status(400).json({ message: 'Salary must be a positive number' });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const query = `
+      INSERT INTO users (fullName, middleName, lastName, contact, username, password, role, position, salary)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    await db.query(query, [
+      fullName,
+      middleName,
+      lastName,
+      contact,
+      username,
+      hashedPassword,
+      role,
+      position,
+      salary,
+    ]);
+
+    res.status(201).json({ message: 'Employee registered successfully' });
+  } catch (err) {
+    console.error('Error during registration:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update user by ID
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { fullName, lastName, contact, username, role, password, credit_balance } = req.body;
+    const { fullName, middleName, lastName, contact, username, role, position, salary, password } = req.body;
+
     let query;
     let params;
 
-    // If a new password is provided, hash it and include in update
     if (password && password.trim() !== '') {
       const hashedPassword = await bcrypt.hash(password, 10);
-      query = `UPDATE users SET fullName = ?, lastName = ?, contact = ?, username = ?, role = ?, password = ?, credit_balance = ? WHERE id = ?`;
-      params = [fullName, lastName, contact, username, role, hashedPassword, credit_balance || 0, id];
+      query = `
+        UPDATE users 
+        SET fullName = ?, middleName = ?, lastName = ?, contact = ?, username = ?, role = ?, position = ?, salary = ?, password = ? 
+        WHERE id = ?
+      `;
+      params = [fullName, middleName, lastName, contact, username, role, position, salary, hashedPassword, id];
     } else {
-      // If no new password, update other fields only
-      query = `UPDATE users SET fullName = ?, lastName = ?, contact = ?, username = ?, role = ?, credit_balance = ? WHERE id = ?`;
-      params = [fullName, lastName, contact, username, role, credit_balance || 0, id];
+      query = `
+        UPDATE users 
+        SET fullName = ?, middleName = ?, lastName = ?, contact = ?, username = ?, role = ?, position = ?, salary = ? 
+        WHERE id = ?
+      `;
+      params = [fullName, middleName, lastName, contact, username, role, position, salary, id];
     }
 
     const [result] = await db.execute(query, params);
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'User not found or no changes made' });
     }
-    
+
     res.json({ message: 'User updated successfully' });
   } catch (err) {
     console.error('Error updating user:', err);
@@ -62,7 +111,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE a user
+// Delete user by ID
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -71,7 +120,7 @@ router.delete('/:id', async (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     res.json({ message: 'User deleted successfully' });
   } catch (err) {
     console.error('Error deleting user:', err);

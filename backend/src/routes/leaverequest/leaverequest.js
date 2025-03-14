@@ -1,162 +1,152 @@
-const express = require('express');
-const mysql = require('mysql2/promise');
-const cors = require('cors');
-const app = express();
+const express = require("express");
+const mysql = require("mysql2/promise");
+const cors = require("cors");
+
 const router = express.Router();
+router.use(cors());
+router.use(express.json());
 
-// MySQL Connection
+// MySQL Connection Pool
 const db = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: '',
-  database: 'leave_db',
-  port: '3306',
+    host: "localhost",
+    user: "root",
+    password: "",
+    database: "leave_db",
+    port: "3306",
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
 });
 
-// Enable CORS for cross-origin requests
-app.use(cors());
+router.post("/apply-leave", async (req, res) => {
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
 
-// Middleware to parse JSON requests
-app.use(express.json());
+    try {
+        console.log("Received apply-leave request:", req.body);
 
-// Route to fetch all leave requests for a user
-router.get('/api/leave/requests/:userId', async (req, res) => {
-  const { userId } = req.params;
-  const query = 'SELECT * FROM leaveRequests WHERE userId = ?';
+        const {
+            user_id,
+            leave_types,
+            number_of_days,
+            leave_dates,
+            other_leave_type,
+            leave_details,
+            location,
+            abroad_details,
+            illness_details,
+            study_leave = false,
+            monetization = false,
+            commutation = false,
+            status = "Pending",
+        } = req.body;
 
-  try {
-    const [results] = await db.query(query, [userId]);
-    return res.status(200).json(results);
-  } catch (err) {
-    console.error('Error fetching leave requests:', err);
-    return res.status(500).json({ message: 'An error occurred while fetching leave requests' });
-  }
-});
+        // Validate required fields
+        if (!user_id || !Array.isArray(leave_types) || leave_types.length === 0 || !Array.isArray(leave_dates) || leave_dates.length === 0) {
+            connection.release();
+            return res.status(400).json({ error: "user_id, at least one leave_type, and leave_date(s) are required" });
+        }
 
-// Route to fetch pending leave requests
-router.get('/api/leave/pending', async (req, res) => {
-  const query = 'SELECT * FROM leaveRequests WHERE status = "Pending"';
+        // Format and sort leave dates
+        const formattedLeaveDates = leave_dates
+            .map((date) => new Date(date).toISOString().split("T")[0])
+            .sort((a, b) => new Date(a) - new Date(b));
 
-  try {
-    const [results] = await db.query(query);
-    return res.status(200).json(results);
-  } catch (err) {
-    console.error('Error fetching pending leave requests:', err);
-    return res.status(500).json({ message: 'An error occurred while fetching pending leave requests' });
-  }
-});
+        // Fetch user leave balances
+        const [balances] = await connection.query(
+            `SELECT leave_type_id, total_credit, used_credit, remaining_credit 
+             FROM employee_leave_balances 
+             WHERE user_id = ? AND leave_type_id IN (?)`,
+            [user_id, leave_types]
+        );
 
-// Route to fetch approved leave requests
-router.get('/api/leave/approved', async (req, res) => {
-  const query = 'SELECT * FROM leaveRequests WHERE status = "Approved"';
+        // Convert balance results into a map
+        const balanceMap = {};
+        balances.forEach(({ leave_type_id, remaining_credit }) => {
+            balanceMap[leave_type_id] = remaining_credit;
+        });
 
-  try {
-    const [results] = await db.query(query);
-    return res.status(200).json(results);
-  } catch (err) {
-    console.error('Error fetching approved leave requests:', err);
-    return res.status(500).json({ message: 'An error occurred while fetching approved leave requests' });
-  }
-});
+        // Check if user has enough leave balance
+        for (const leaveTypeId of leave_types) {
+            if (!balanceMap[leaveTypeId] || balanceMap[leaveTypeId] < number_of_days) {
+                connection.release();
+                return res.status(400).json({
+                    error: `Insufficient leave balance for leave_type_id: ${leaveTypeId}`,
+                });
+            }
+        }
 
-// Route to fetch rejected leave requests
-router.get('/api/leave/rejected', async (req, res) => {
-  const query = 'SELECT * FROM leaveRequests WHERE status = "Rejected"';
+        // Deduct leave balance
+        for (const leaveTypeId of leave_types) {
+            await connection.query(
+                `UPDATE employee_leave_balances 
+                 SET used_credit = used_credit + ?, remaining_credit = remaining_credit - ? 
+                 WHERE user_id = ? AND leave_type_id = ?`,
+                [number_of_days, number_of_days, user_id, leaveTypeId]
+            );
+        }
 
-  try {
-    const [results] = await db.query(query);
-    return res.status(200).json(results);
-  } catch (err) {
-    console.error('Error fetching rejected leave requests:', err);
-    return res.status(500).json({ message: 'An error occurred while fetching rejected leave requests' });
-  }
-});
+        // Insert into leave_applications table
+        const [result] = await connection.execute(
+            `INSERT INTO leave_applications 
+            (user_id, other_leave_type, leave_details, number_of_days, location, abroad_details, illness_details, study_leave, monetization, commutation, status, created_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+            [user_id, other_leave_type || null, leave_details || null, number_of_days, location || null, abroad_details || null, illness_details || null, study_leave, monetization, commutation, status]
+        );
 
-// Route to approve or reject a leave request
-router.patch('/api/leave/:id/status', async (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
+        const leave_application_id = result.insertId;
 
-  if (!['Approved', 'Rejected'].includes(status)) {
-    return res.status(400).json({ message: 'Invalid status. Use "Approved" or "Rejected".' });
-  }
+        // Insert into leave_application_types
+        const leaveTypeQuery = `INSERT INTO leave_application_types (leave_application_id, leave_type_id) VALUES ?`;
+        const leaveTypeValues = leave_types.map((leaveTypeId) => [leave_application_id, leaveTypeId]);
+        await connection.query(leaveTypeQuery, [leaveTypeValues]);
 
-  const query = 'UPDATE leaveRequests SET status = ? WHERE id = ?';
+        // Insert leave dates
+        const leaveDateQuery = `INSERT INTO leave_dates (leave_application_id, leave_date) VALUES ?`;
+        const leaveDateValues = formattedLeaveDates.map((date) => [leave_application_id, date]);
+        await connection.query(leaveDateQuery, [leaveDateValues]);
 
-  try {
-    const [result] = await db.query(query, [status, id]);
+        // Commit transaction
+        await connection.commit();
+        connection.release();
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Leave request not found' });
+        res.status(201).json({
+            message: "Leave application submitted successfully",
+            leave_application_id,
+        });
+    } catch (error) {
+        await connection.rollback();
+        connection.release();
+        console.error("Error submitting leave application:", error);
+        res.status(500).json({ error: "Internal server error" });
     }
-
-    return res.status(200).json({ message: `Leave request ${status}` });
-  } catch (err) {
-    console.error('Error updating leave request status:', err);
-    return res.status(500).json({ message: 'An error occurred while updating the leave request status' });
-  }
 });
 
-// Route to fetch user credit balance
-router.get('/api/users/:userId/credit-balance', async (req, res) => {
-  const { userId } = req.params;
-  const query = 'SELECT credit_balance FROM users WHERE id = ?';
 
-  try {
-    const [results] = await db.query(query, [userId]);
+// Fetch all leave applications with multiple leave types and dates
+router.get("/leave-applications", async (req, res) => {
+    try {
+        console.log("Fetching all leave applications...");
+        const query = `
+            SELECT la.*, 
+                   JSON_ARRAYAGG(DISTINCT DATE_FORMAT(lad.leave_date, '%M %d, %Y')) AS leave_dates,
+                   JSON_ARRAYAGG(DISTINCT lt.name) AS leave_types,
+                   DATE_FORMAT(la.created_at, '%M %d, %Y') AS formatted_date
+            FROM leave_applications la
+            LEFT JOIN leave_dates lad ON la.id = lad.leave_application_id
+            LEFT JOIN leave_application_types lat ON la.id = lat.leave_application_id
+            LEFT JOIN leave_types lt ON lat.leave_type_id = lt.id
+            GROUP BY la.id
+            ORDER BY lad.leave_date ASC
+        `;
+        const [results] = await db.execute(query);
 
-    if (results.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
+        console.log("Fetched leave applications:", results.length);
+        res.json(results);
+    } catch (error) {
+        console.error("Error fetching leave applications:", error);
+        res.status(500).json({ error: "Internal server error" });
     }
-
-    return res.status(200).json({ credit_balance: results[0].credit_balance });
-  } catch (err) {
-    console.error('Error fetching user credit balance:', err);
-    return res.status(500).json({ message: 'An error occurred while fetching user credit balance' });
-  }
-});
-
-// Route to submit a leave request and deduct credits
-router.post('/api/leave/requests', async (req, res) => {
-  const { userId, leaveTypes, leaveDetails, workingDays, inclusiveDatesStart, inclusiveDatesEnd, commutation, applicantSignature } = req.body;
-
-  // Calculate the number of days for the leave request
-  const startDate = new Date(inclusiveDatesStart);
-  const endDate = new Date(inclusiveDatesEnd);
-  const timeDiff = endDate - startDate;
-  const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) + 1; // Add 1 to include both start and end dates
-
-  try {
-    // Fetch the user's current credit balance
-    const [user] = await db.query('SELECT credit_balance FROM users WHERE id = ?', [userId]);
-
-    if (user.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    const currentBalance = user[0].credit_balance;
-
-    // Check if the user has enough credits for the leave request
-    if (daysDiff > currentBalance) {
-      return res.status(400).json({ message: 'Insufficient credit balance' });
-    }
-
-    // Deduct the credits from the user's balance
-    const newBalance = currentBalance - daysDiff;
-    await db.query('UPDATE users SET credit_balance = ? WHERE id = ?', [newBalance, userId]);
-
-    // Insert the leave request into the database
-    const [result] = await db.query(
-      `INSERT INTO leaveRequests (userId, leaveTypes, leaveDetails, workingDays, inclusiveDatesStart, inclusiveDatesEnd, commutation, applicantSignature, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending')`,
-      [userId, leaveTypes.join(','), leaveDetails, workingDays, inclusiveDatesStart, inclusiveDatesEnd, commutation, applicantSignature]
-    );
-
-    return res.status(201).json({ message: 'Leave request submitted successfully', newBalance });
-  } catch (err) {
-    console.error('Error submitting leave request:', err);
-    return res.status(500).json({ message: 'An error occurred while submitting the leave request' });
-  }
 });
 
 module.exports = router;

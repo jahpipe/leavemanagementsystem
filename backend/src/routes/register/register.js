@@ -14,7 +14,7 @@ const db = mysql.createPool({
 
 // Register Employee Route
 router.post("/", async (req, res) => {
-  const { fullName, lastName, contact, username, password, role, credit_balance } = req.body;
+  const { fullName, middleName, lastName, contact, username, password, role, position, salary } = req.body;
 
   if (!["admin", "employee"].includes(role)) {
     return res.status(400).json({ message: 'Invalid role. Only "admin" or "employee" are allowed.' });
@@ -24,16 +24,22 @@ router.post("/", async (req, res) => {
     return res.status(400).json({ message: "Password must be at least 6 characters long" });
   }
 
+  if (salary !== undefined && (isNaN(salary) || salary < 0)) {
+    return res.status(400).json({ message: "Salary must be a positive number" });
+  }
+
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const query =
-      "INSERT INTO users (fullName, lastName, contact, username, password, role, credit_balance) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    const query = `
+      INSERT INTO users (fullName, middleName, lastName, contact, username, password, role, position, salary)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
 
-    await db.query(query, [fullName, lastName, contact, username, hashedPassword, role, credit_balance || 0]); // Default to 0
+    await db.query(query, [fullName, middleName, lastName, contact, username, hashedPassword, role, position, salary]);
 
     res.status(201).json({ message: "Employee registered successfully" });
   } catch (err) {
-    console.error("🔥 Error during registration:", err);
+    console.error("Error during registration:", err);
     res.status(500).json({ message: "Server error" });
   }
 });

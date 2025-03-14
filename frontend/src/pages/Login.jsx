@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import 'bootstrap/dist/css/bootstrap.min.css'; // Import Bootstrap CSS
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'; // Import FontAwesome
-import { faUser, faLock, faUserShield } from '@fortawesome/free-solid-svg-icons'; // Import icons
+import 'bootstrap/dist/css/bootstrap.min.css'; 
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'; 
+import { faUser, faLock, faUserShield } from '@fortawesome/free-solid-svg-icons'; 
 
-axios.defaults.baseURL = import.meta.env.VITE_REACT_APP_BACKEND_BASEURL; // Set base URL
+axios.defaults.baseURL = import.meta.env.VITE_REACT_APP_BACKEND_BASEURL; 
 
 const LoginForm = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('employee'); // Default role is 'employee'
+  const [role, setRole] = useState('employee'); 
   const [error, setError] = useState('');
   const [shake, setShake] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -31,11 +31,10 @@ const LoginForm = () => {
         const userData = response.data.user;
         localStorage.setItem('user', JSON.stringify(userData));
 
-        // Navigate based on role
         if (userData.role === 'admin') {
-          navigate('/AdminDashboard'); // Admin dashboard
+          navigate('/AdminDashboard'); 
         } else if (userData.role === 'employee') {
-          navigate('/EmpDashboard'); // Employee dashboard
+          navigate('/EmpDashboard'); 
         } else {
           throw new Error('Invalid role');
         }
@@ -44,7 +43,7 @@ const LoginForm = () => {
       }
     } catch (error) {
       console.error('Login Error:', error);
-      console.error('Error Response:', error.response); // Log server response
+      console.error('Error Response:', error.response);
       setError(error.response?.data?.message || 'Unable to connect to the server.');
       setShake(true);
       setTimeout(() => setShake(false), 600);
@@ -68,7 +67,7 @@ const LoginForm = () => {
           />
         </div>
         <form onSubmit={handleSubmit} className="needs-validation" noValidate>
-          {/* Username Input with Floating Label and Icon */}
+
           <div className="form-floating mb-3">
             <input
               type="text"
@@ -152,3 +151,4 @@ const LoginForm = () => {
 };
 
 export default LoginForm;
+``

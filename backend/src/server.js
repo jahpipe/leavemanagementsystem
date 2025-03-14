@@ -8,10 +8,13 @@ const router = express.Router();
 const loginRouter = require('./routes/login/login');
 const registerRouter = require('./routes/register/register');
 const viewemployeRouter = require('./routes/viewemploye/viewemploye'); 
-const leaveRouter = require('./routes/leaves/leaves');
-const leaveApprovalRouter = require("./routes/leaveaporval/leaveaproval");
 const leaverequestRouter = require('./routes/leaverequest/leaverequest');
-const creditbalanceRouter = require("./routes/creditbalance/creditbalance");
+const leaveRouter = require("./routes/leaves/leaves");
+const leaveapprovalRouter = require('./routes/leaveaporval/leaveaproval');
+const leaveBalanceRoutes = require('./routes/leavebalance/leavebalance')
+const reportsRoutes = require('./routes/reports/reports');
+
+
 
 // Middleware
 const app = express();
@@ -42,10 +45,12 @@ db.connect(err => {
 app.use('/api/login', loginRouter);
 app.use('/api/register', registerRouter);
 app.use('/users', viewemployeRouter);
-app.use('/api/leave', leaveRouter);
-app.use("/api/leaveapproval", leaveApprovalRouter);
-app.use('api/leaverequest', leaverequestRouter);
-app.use("/api/creditbalance", creditbalanceRouter);
+app.use('/api/leaverequest', leaverequestRouter )
+app.use("/api/leave", leaveRouter);
+app.use('/api/leaveapproval', leaveapprovalRouter);
+app.use("/api", leaveBalanceRoutes);
+app.use("/api/reports", reportsRoutes)
+
 
 // Start the server
 const PORT = process.env.PORT || 8000;

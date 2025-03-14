@@ -31,31 +31,34 @@ const EmployeeDashboard = () => {
   return (
     <div className="container-fluid vh-100 d-flex">
       {/* Sidebar */}
-      <div className={`bg-primary text-white p-3 d-flex flex-column shadow vh-100 ${sidebarOpen ? "w-25" : "w-0 d-none d-md-flex"}`} style={{ transition: "width 0.3s" }}>
+      <div className={`sidebar bg-primary text-white p-3 d-flex flex-column shadow vh-100 ${sidebarOpen ? "w-20" : "w-0 d-none d-md-flex"}`} style={{ transition: "width 0.3s", maxHeight: "100vh", overflowY: "auto" }}>
         <button className="btn btn-light d-md-none mb-3" onClick={() => setSidebarOpen(false)}>
           <FaTimes /> Close
         </button>
         <h3 className="text-center mb-4">Dashboard</h3>
         {user && <p className="text-center">Welcome, {user.fullName}!</p>}
 
-        {[ 
-          { key: "dashboard", label: "Dashboard", icon: <FaHome /> },
-          { key: "apply", label: "Apply for Leave", icon: <FaPaperPlane /> },
-          { key: "requests", label: "My Leave Requests", icon: <FaList /> },
-          { key: "balance", label: "Leave Balance", icon: <FaBalanceScale /> },
-          { key: "settings", label: "Settings", icon: <FaCog /> },
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            className={`btn ${activeTab === tab.key ? "btn-light text-primary" : "btn-outline-light"} mb-2 d-flex align-items-center gap-2 w-100`}
-            onClick={() => {
-              setActiveTab(tab.key);
-              setSidebarOpen(false);
-            }}
-          >
-            {tab.icon} <span>{tab.label}</span>
-          </button>
-        ))}
+        <div className="d-flex flex-column flex-grow-1">
+          {[ 
+            { key: "dashboard", label: "Dashboard", icon: <FaHome /> },
+            { key: "apply", label: "Apply for Leave", icon: <FaPaperPlane /> },
+            { key: "requests", label: "My Leave Requests", icon: <FaList /> },
+            { key: "balance", label: "Leave Balance", icon: <FaBalanceScale /> },
+            { key: "settings", label: "Settings", icon: <FaCog /> },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              className={`btn ${activeTab === tab.key ? "btn-light text-primary" : "btn-outline-light"} mb-2 d-flex align-items-center gap-2 w-100`}
+              style={{ minWidth: "150px" }}
+              onClick={() => {
+                setActiveTab(tab.key);
+                setSidebarOpen(false);
+              }}
+            >
+              {tab.icon} <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
 
         <button className="btn btn-danger mt-auto d-flex align-items-center gap-2 w-100" onClick={handleLogout}>
           <FaSignOutAlt /> <span>Logout</span>
@@ -90,11 +93,8 @@ const EmployeeDashboard = () => {
         )}
 
         {activeTab === "apply" && <ApplyForLeave />} 
-
-        {activeTab === "requests" && <MyleaveRequest/>}
-
-        {activeTab === "balance" &&  <LeaveCredit/> }
-
+        {activeTab === "requests" && <MyleaveRequest />} 
+        {activeTab === "balance" && <LeaveCredit />}  
         {activeTab === "settings" && (
           <div>
             <h2>Settings</h2>
