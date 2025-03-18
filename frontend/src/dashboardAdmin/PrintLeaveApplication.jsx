@@ -170,22 +170,37 @@ const PrintLeaveApplication = ({ leaveRequest }) => {
                   <p className="col small">As of</p>
                   <p className="col small">_________________________</p>
                 </div>
-                <div className="row mt-2">
-                  <p className="col small">Vacation Leave</p>
-                  <p className="col small">Sick Leave</p>
-                </div>
-                <div className="row mt-2">
-                  <p className="col small">Total Earned</p>
-                  <p className="col small">_________________________</p>
-                </div>
-                <div className="row mt-2">
-                  <p className="col small">Less this application</p>
-                  <p className="col small">_________________________</p>
-                </div>
-                <div className="row mt-2">
-                  <p className="col small">Balance</p>
-                  <p className="col small">_________________________</p>
-                </div>
+                <div className="border p-4 rounded-lg shadow-md w-64">
+                <div className="border p-4 rounded-lg shadow-md w-64">
+      <table className="table-auto w-full border-collapse border border-black">
+        <tbody>
+          <tr className="border border-black">
+            <td className="border border-black p-2 text-sm">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+            <td className="border border-black p-2 text-sm">Vacation Leave</td>
+            <td className="border border-black p-2 text-sm">Sick Leave</td>
+          </tr>
+          <tr className="border border-black">
+            <td className="border border-black p-2 text-sm" colSpan="3">Total Earned</td>
+          </tr>
+          <tr className="border border-black">
+        
+          </tr>
+          <tr className="border border-black">
+            <td className="border border-black p-2 text-sm" colSpan="3">Less this application</td>
+          </tr>
+          <tr className="border border-black">
+       
+          </tr>
+          <tr className="border border-black">
+            <td className="border border-black p-2 text-sm" colSpan="3">Balance</td>
+          </tr>
+          <tr className="border border-black">
+            
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    </div>
               </div>
               <p className="small mt-2">_________________________</p>
               <p className="small">(JULIUS CESAR L. DE LA CERNA)</p>

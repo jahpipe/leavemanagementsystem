@@ -79,12 +79,13 @@ const MyLeaveRequest = () => {
                   <th>Working Days</th>
                   <th>Inclusive Dates</th>
                   <th>Status</th>
+                  {filter === "Rejected" && <th>Rejection Reason</th>}
                 </tr>
               </thead>
               <tbody>
                 {currentItems.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="text-center text-muted">
+                    <td colSpan={filter === "Rejected" ? "5" : "4"} className="text-center text-muted">
                       No leave requests found.
                     </td>
                   </tr>
@@ -107,6 +108,11 @@ const MyLeaveRequest = () => {
                           {request.status}
                         </span>
                       </td>
+                      {filter === "Rejected" && (
+                        <td className="text-danger">
+                          {request.rejection_message ? request.rejection_message : "No reason provided"}
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}

@@ -131,7 +131,8 @@ router.get("/leave-applications", async (req, res) => {
             SELECT la.*, 
                    JSON_ARRAYAGG(DISTINCT DATE_FORMAT(lad.leave_date, '%M %d, %Y')) AS leave_dates,
                    JSON_ARRAYAGG(DISTINCT lt.name) AS leave_types,
-                   DATE_FORMAT(la.created_at, '%M %d, %Y') AS formatted_date
+                   DATE_FORMAT(la.created_at, '%M %d, %Y') AS formatted_date,
+                   la.rejection_message  -- Include rejection reason
             FROM leave_applications la
             LEFT JOIN leave_dates lad ON la.id = lad.leave_application_id
             LEFT JOIN leave_application_types lat ON la.id = lat.leave_application_id
@@ -148,5 +149,6 @@ router.get("/leave-applications", async (req, res) => {
         res.status(500).json({ error: "Internal server error" });
     }
 });
+
 
 module.exports = router;
