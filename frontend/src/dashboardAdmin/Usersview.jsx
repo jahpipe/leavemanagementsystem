@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { FaEdit, FaTrash } from "react-icons/fa";
 
 const UserView = () => {
   const [users, setUsers] = useState([]);
@@ -249,19 +250,19 @@ const UserView = () => {
                       <td>{employee.position}</td>
                       <td>{employee.salary}</td>
                       <td>
-                        <button
-                          className="btn btn-sm btn-primary me-2"
-                          onClick={() => handleUserClick(employee)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="btn btn-sm btn-danger"
-                          onClick={() => handleDelete(employee.id)}
-                        >
-                          Delete
-                        </button>
-                      </td>
+                      <button
+                        className="btn btn-sm btn-primary me-2"
+                        onClick={() => handleUserClick(admin)}
+                      >
+                        <FaEdit />
+                      </button>
+                      <button
+                        className="btn btn-sm btn-danger"
+                        onClick={() => handleDelete(admin.id)}
+                      >
+                        <FaTrash />
+                      </button>
+                    </td>
                     </tr>
                   ))}
                 </tbody>

@@ -6,6 +6,7 @@ const Admin = () => {
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [userCounts, setUserCounts] = useState({ admin: 0, employee: 0 });
   const pageSize = 5; 
 
   const parseDetails = (details) => {
@@ -61,6 +62,23 @@ const Admin = () => {
     }
   };
 
+  useEffect(() => {
+    const fetchUserCounts = async () => {
+      try {
+        const response = await fetch("http://localhost:8000/api/users/count");
+        if (!response.ok) {
+          throw new Error("Failed to fetch user counts");
+        }
+        const data = await response.json();
+        setUserCounts(data);
+      } catch (error) {
+        console.error("Error fetching user counts:", error);
+      }
+    };
+  
+    fetchUserCounts();
+  }, []);
+  
   return (
     <div className="container mt-5">
       <div className="card shadow p-4">
@@ -94,6 +112,7 @@ const Admin = () => {
           </div>
         )}
       </div>
+      
     </div>
   );
 };

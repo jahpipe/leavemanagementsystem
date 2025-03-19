@@ -10,6 +10,7 @@ const LeaveRequestApproval = () => {
   const [hasMore, setHasMore] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [messageText, setMessageText] = useState({});
+  const [showPrintDialog, setShowPrintDialog] = useState(false); // State to control print dialog visibility
   const pageSize = 5;
 
   useEffect(() => {
@@ -85,6 +86,16 @@ const LeaveRequestApproval = () => {
       console.error("Error sending message:", error);
       alert("An error occurred while sending the message.");
     }
+  };
+
+  const handlePrint = (request) => {
+    setSelectedRequest(request);
+    setShowPrintDialog(true);
+  };
+
+  const closePrintDialog = () => {
+    setShowPrintDialog(false);
+    setSelectedRequest(null);
   };
 
   return (
@@ -163,7 +174,7 @@ const LeaveRequestApproval = () => {
                       <td>
                         <button
                           className="btn btn-primary btn-sm"
-                          onClick={() => setSelectedRequest(request)}
+                          onClick={() => handlePrint(request)}
                         >
                           <FaPrint />
                         </button>
@@ -204,6 +215,52 @@ const LeaveRequestApproval = () => {
           </div>
         )}
       </div>
+
+      {/* Floating Modal for PrintLeaveApplication */}
+      {showPrintDialog && selectedRequest && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "white",
+              padding: "20px",
+              borderRadius: "8px",
+              width: "80%",
+              maxWidth: "800px",
+              maxHeight: "90vh",
+              overflowY: "auto",
+            }}
+          >
+            <button
+              style={{
+                position: "absolute",
+                top: "10px",
+                right: "10px",
+                background: "none",
+                border: "none",
+                fontSize: "1.5rem",
+                cursor: "pointer",
+              }}
+              onClick={closePrintDialog}
+            >
+              &times;
+            </button>
+            <PrintLeaveApplication leaveRequest={selectedRequest} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
