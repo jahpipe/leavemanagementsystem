@@ -42,174 +42,193 @@ const PrintLeaveApplication = ({ leaveRequest }) => {
         {/* Section 1: Agency/School and Name */}
         <div className="border-top border-bottom border-secondary py-2">
           <div className="row">
-            <div className="col-md-6">
-              <p className="small font-weight-bold">1. AGENCY/SCHOOL</p>
-              <p className="small">DepEd - Baybay City Division</p>
-            </div>
-            <div className="col-md-6">
-              <p className="small font-weight-bold">
-                2. NAME: (Last) <span className="underline">{leaveRequest.lastName}</span> (First){" "}
-                <span className="underline">{leaveRequest.fullName}</span> (Middle){" "}
-                <span className="underline">{leaveRequest.middleName || "N/A"}</span>
-              </p>
-            </div>
-          </div>
-          <div className="row mt-2">
-            <div className="col-md-3">
-              <p className="small font-weight-bold">3. DATE OF FILING</p>
-              <p className="small">{new Date(leaveRequest.created_at).toLocaleDateString()}</p>
-            </div>
-            <div className="col-md-3">
-              <p className="small font-weight-bold">4. POSITION</p>
-              <p className="small">{leaveRequest.position || "N/A"}</p>
-            </div>
-            <div className="col-md-3">
-              <p className="small font-weight-bold">5. SALARY</p>
-              <p className="small">{leaveRequest.salary || "N/A"}</p>
-            </div>
-          </div>
-        </div>
+  <div className="col-md-6">
+    <p className="small font-weight-bold">1. AGENCY/SCHOOL</p>
+    <p className="small">DepEd - Baybay City Division</p>
+  </div>
+  <div className="col-md-6">
+    <div style={{ display: "flex", alignItems: "center" }}>
+      <p className="small font-weight-bold" style={{ minWidth: "80px" }}>2. NAME:</p>
+      <div style={{ display: "flex", gap: "40px", fontWeight: "bold" }}>
+        <span>(Last)</span>
+        <span>(First)</span>
+        <span>(Middle)</span>
+      </div>
+    </div>
+    <div style={{ display: "flex", gap: "40px", textDecoration: "underline", marginLeft: "80px" }}>
+      <span>{leaveRequest.lastName}</span>
+      <span>{leaveRequest.fullName}</span>
+      <span>{leaveRequest.middleName || "N/A"}</span>
+    </div>
+  </div>
+</div>
+<hr style={{ border: "1px solid black", marginTop: "10px" }} />
 
+<div className="d-flex flex-wrap gap-3 mt-2">
+  <div className="flex-grow-1">
+    <p className="small font-weight-bold">3. DATE OF FILING</p>
+    <p className="small">{new Date(leaveRequest.created_at).toLocaleDateString()}</p>
+  </div>
+  <div className="flex-grow-1">
+    <p className="small font-weight-bold">4. POSITION</p>
+    <p className="small">{leaveRequest.position || "N/A"}</p>
+  </div>
+  <div className="flex-grow-1">
+    <p className="small font-weight-bold">5. SALARY</p>
+    <p className="small">{leaveRequest.salary || "N/A"}</p>
+  </div>
+</div>
+        </div>
         {/* Section 2: Type of Leave and Details */}
         <div className="border-bottom border-secondary py-2">
-          <div className="row">
-            <div className="col-md-6 pr-2">
-              <p className="small font-weight-bold">6A. TYPE OF LEAVE TO BE AVAILED OF</p>
-              <div className="small" style={{ maxHeight: "300px", overflowY: "auto" }}>
-                {leaveTypes.map((type, index) => (
-                  <p key={index}>
-                    <input
-                      type="checkbox"
-                      className="mr-2"
-                      checked={leaveRequest.leave_types.includes(type.split(" (")[0])}
-                      readOnly
-                    />{" "}
-                    {type}
-                  </p>
-                ))}
-              </div>
-            </div>
-            <div className="col-md-6 pl-2">
-              <p className="small font-weight-bold">6B. DETAILS OF LEAVE</p>
-              <div className="small" style={{ maxHeight: "300px", overflowY: "auto" }}>
-                <p>
-                  <input type="checkbox" className="mr-2" /> In case of Vacation/Special Privilege Leave:
-                </p>
-                <p className="ml-4">
-                  <input type="checkbox" className="mr-2" /> Within the Philippines
-                </p>
-                <p className="ml-4">
-                  <input type="checkbox" className="mr-2" /> Abroad (Specify):{" "}
-                  <span className="underline">_________________________</span>
-                </p>
-                <p>
-                  <input type="checkbox" className="mr-2" /> In case of Sick Leave:
-                </p>
-                <p className="ml-4">
-                  <input type="checkbox" className="mr-2" /> In Hospital (Specify Illness):{" "}
-                  <span className="underline">_________________________</span>
-                </p>
-                <p className="ml-4">
-                  <input type="checkbox" className="mr-2" /> Out Patient (Specify Illness):{" "}
-                  <span className="underline">_________________________</span>
-                </p>
-                <p>
-                  <input type="checkbox" className="mr-2" /> In case of Special Leave Benefits for Women:
-                </p>
-                <p className="ml-4">
-                  <input type="checkbox" className="mr-2" /> Specify (Illness):{" "}
-                  <span className="underline">_________________________</span>
-                </p>
-                <p>
-                  <input type="checkbox" className="mr-2" /> Others:
-                </p>
-                <p className="ml-4">
-                  <input type="checkbox" className="mr-2" /> Monetization of Leave Credits
-                </p>
-                <p className="ml-4">
-                  <input type="checkbox" className="mr-2" /> Terminal Leave
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+  <div className="row">
+    <div className="col-md-6 pr-2">
+      <p className="small font-weight-bold">6A. TYPE OF LEAVE TO BE AVAILED OF</p>
+      <div className="small">
+        {leaveTypes.map((type, index) => (
+          <p key={index}>
+            <input
+              type="checkbox"
+              className="mr-2"
+              checked={leaveRequest.leave_types.includes(type.split(" (")[0])}
+              readOnly
+            />{" "}
+            {type}
+          </p>
+        ))}
+      </div>
+    </div>
+    <div className="col-md-6 pl-2">
+      <p className="small font-weight-bold">6B. DETAILS OF LEAVE</p>
+      <div className="small">
+        <p>
+          <input type="checkbox" className="mr-2" /> In case of Vacation/Special Privilege Leave:
+        </p>
+        <p className="ml-4">
+          <input type="checkbox" className="mr-2" /> Within the Philippines
+        </p>
+        <p className="ml-4">
+          <input type="checkbox" className="mr-2" /> Abroad (Specify):{" "}
+          <span className="underline">_________________________</span>
+        </p>
+        <p>
+          <input type="checkbox" className="mr-2" /> In case of Sick Leave:
+        </p>
+        <p className="ml-4">
+          <input type="checkbox" className="mr-2" /> In Hospital (Specify Illness):{" "}
+          <span className="underline">_________________________</span>
+        </p>
+        <p className="ml-4">
+          <input type="checkbox" className="mr-2" /> Out Patient (Specify Illness):{" "}
+          <span className="underline">_________________________</span>
+        </p>
+        <p>
+          <input type="checkbox" className="mr-2" /> In case of Special Leave Benefits for Women:
+        </p>
+        <p className="ml-4">
+          <input type="checkbox" className="mr-2" /> Specify (Illness):{" "}
+          <span className="underline">_________________________</span>
+        </p>
+        <p>
+          <input type="checkbox" className="mr-2" /> Others:
+        </p>
+        <p className="ml-4">
+          <input type="checkbox" className="mr-2" /> Monetization of Leave Credits
+        </p>
+        <p className="ml-4">
+          <input type="checkbox" className="mr-2" /> Terminal Leave
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
 
         {/* Section 3: Number of Days and Commutation */}
         <div className="border-bottom border-secondary py-2">
-          <div className="row">
-            <div className="col-md-6">
-              <p className="small font-weight-bold">6C. NUMBER OF WORKING DAYS APPLIED FOR</p>
-              <p className="small">{leaveRequest.leave_dates.length} DAY(S)</p>
-            </div>
-            <div className="col-md-6">
-              <p className="small font-weight-bold">6D. COMMUTATION</p>
-              <p className="small">
-                <input type="checkbox" className="mr-2" /> Not Requested{" "}
-                <input type="checkbox" className="mr-2" /> Requested
-              </p>
-            </div>
-          </div>
-          <div className="mt-2">
-            <p className="small font-weight-bold">INCLUSIVE DATES</p>
-            <p className="small">{leaveRequest.leave_dates.join(", ")}</p>
-          </div>
-          <div className="mt-2">
-            <p className="small">_________________________</p>
-            <p className="small">(Signature of Applicant)</p>
-          </div>
-        </div>
+  <div className="row">
+    <div className="col-md-6">
+      <p className="small font-weight-bold">6C. NUMBER OF WORKING DAYS APPLIED FOR</p>
+      <p className="small text-center">{leaveRequest.leave_dates.length} DAY(S)</p>
+      <hr />
+      <p className="small font-weight-bold">INCLUSIVE DATES</p>
+      <p className="small text-center">{leaveRequest.leave_dates.join(", ")}</p>
+    </div>
+    <div className="col-md-6">
+      <p className="small font-weight-bold">6D. COMMUTATION</p>
+      <p className="small">
+        <input type="checkbox" className="mr-2" /> Not Requested{" "}
+        <input type="checkbox" className="mr-2" /> Requested
+        <br />
+        <br />
+        
+        <p className="small">_________________________________________________________________</p>
+        <p className="small text-center">(Signature of Applicant)</p>
+      </p>
+    </div>
+  </div>
+        
+  <div className="d-flex">
+
+  </div>
+
+  {/* Signature Section - Properly Centered */}
+
+</div>
+
 
         {/* Section 4: Certification of Leave Credits and Recommendation */}
-        <div className="border-bottom border-secondary py-2">
-          <p className="small font-weight-bold">7. DETAILS OF ACTION ON APPLICATION</p>
+          <div className="border-bottom border-secondary py-2">
+         <p className="small font-weight-bold text-center">7. DETAILS OF ACTION ON APPLICATION</p>
+            <hr />
+          <hr />
           <div className="row mt-2">
             <div className="col-md-6 pr-2">
               <p className="small font-weight-bold">7A. CERTIFICATION OF LEAVE CREDITS</p>
-              <div className="border border-secondary p-2">
-                <div className="row">
-                  <p className="col small">As of</p>
-                  <p className="col small">_________________________</p>
+              <div className="row">
+                  <p className="col small text-center">As of _________________________</p>
                 </div>
-                <div className="border p-4 rounded-lg shadow-md w-64">
-                <div className="border p-4 rounded-lg shadow-md w-64">
-      <table className="table-auto w-full border-collapse border border-black">
-        <tbody>
-          <tr className="border border-black">
-            <td className="border border-black p-2 text-sm">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
-            <td className="border border-black p-2 text-sm">Vacation Leave</td>
-            <td className="border border-black p-2 text-sm">Sick Leave</td>
-          </tr>
-          <tr className="border border-black">
-            <td className="border border-black p-2 text-sm" colSpan="3">Total Earned</td>
-          </tr>
-          <tr className="border border-black">
-        
-          </tr>
-          <tr className="border border-black">
-            <td className="border border-black p-2 text-sm" colSpan="3">Less this application</td>
-          </tr>
-          <tr className="border border-black">
-       
-          </tr>
-          <tr className="border border-black">
-            <td className="border border-black p-2 text-sm" colSpan="3">Balance</td>
-          </tr>
-          <tr className="border border-black">
-            
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    </div>
-              </div>
-              <p className="small mt-2">_________________________</p>
-              <p className="small">(JULIUS CESAR L. DE LA CERNA)</p>
-              <p className="small">AO IV / HRMO</p>
-            </div>
-            <div className="col-md-6 pl-2">
-              <p className="small font-weight-bold">7B. RECOMMENDATION</p>
-              <div className="small">
-                <p>
+              <div className="">   
+                <div className=" ">
+                <div className="">
+                  <table className="table-auto w-full border-collapse border border-black">
+                    <tbody>
+                      <tr className="border border-black">
+                        <td className="border border-black p-2 text-sm">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                        <td className="border border-black p-2 text-sm">Vacation Leave</td>
+                        <td className="border border-black p-2 text-sm">Sick Leave</td>
+                      </tr>
+                      <tr className="border border-black">
+                        <td className="border border-black p-2 text-sm" colSpan="3">Total Earned</td>
+                      </tr>
+                      <tr className="border border-black">
+                    
+                      </tr>
+                      <tr className="border border-black">
+                        <td className="border border-black p-2 text-sm" colSpan="3">Less this application</td>
+                      </tr>
+                      <tr className="border border-black">
+                  
+                      </tr>
+                      <tr className="border border-black">
+                        <td className="border border-black p-2 text-sm" colSpan="3">Balance</td>
+                      </tr>
+                      <tr className="border border-black">
+                        
+                      </tr>
+                    </tbody>
+                  </table>
+                  </div>
+                  </div>
+                 </div>
+                    <p className="small mt-2">_________________________</p>
+                    <p className="small">(JULIUS CESAR L. DE LA CERNA)</p>
+                    <p className="small">AO IV / HRMO</p>
+                  </div>
+                  <div className="col-md-6 pl-2">
+                    <p className="small font-weight-bold">7B. RECOMMENDATION</p>
+                    <div className="small">
+                      <p>
                   <input type="checkbox" className="mr-2" /> For approval
                 </p>
                 <p>
