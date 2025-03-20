@@ -124,25 +124,59 @@ router.post("/apply-leave", async (req, res) => {
 
 
 // Fetch all leave applications with multiple leave types and dates
+// Fetch all leave applications with multiple leave types and dates
 router.get("/leave-applications", async (req, res) => {
     try {
         console.log("Fetching all leave applications...");
+
         const query = `
-            SELECT la.*, 
-                   JSON_ARRAYAGG(DISTINCT DATE_FORMAT(lad.leave_date, '%M %d, %Y')) AS leave_dates,
-                   JSON_ARRAYAGG(DISTINCT lt.name) AS leave_types,
-                   DATE_FORMAT(la.created_at, '%M %d, %Y') AS formatted_date,
-                   la.rejection_message  -- Include rejection reason
+            SELECT 
+                la.id,
+                la.user_id,
+                la.location,
+                la.abroad_details,
+                la.illness_details,
+                la.study_leave,
+                la.monetization,
+                la.commutation,
+                la.status,
+                la.created_at,
+                la.rejection_message,
+                GROUP_CONCAT(DISTINCT DATE_FORMAT(lad.leave_date, '%M %d, %Y') ORDER BY lad.leave_date ASC) AS leave_dates,
+                GROUP_CONCAT(DISTINCT lt.name ORDER BY lt.name ASC) AS leave_types
             FROM leave_applications la
             LEFT JOIN leave_dates lad ON la.id = lad.leave_application_id
             LEFT JOIN leave_application_types lat ON la.id = lat.leave_application_id
             LEFT JOIN leave_types lt ON lat.leave_type_id = lt.id
             GROUP BY la.id
-            ORDER BY lad.leave_date ASC
+            ORDER BY la.created_at DESC
+            LIMIT 0, 25
         `;
+
         const [results] = await db.execute(query);
 
+        // Log the fetched leave applications
         console.log("Fetched leave applications:", results.length);
+
+        // Log each leave application to verify the data for Section 6B
+        results.forEach((application, index) => {
+            console.log(`Leave Application #${index + 1}:`, {
+                id: application.id,
+                user_id: application.user_id,
+                location: application.location,
+                abroad_details: application.abroad_details,
+                illness_details: application.illness_details,
+                study_leave: application.study_leave,
+                monetization: application.monetization,
+                commutation: application.commutation,
+                status: application.status,
+                created_at: application.created_at,
+                rejection_message: application.rejection_message,
+                leave_dates: application.leave_dates,
+                leave_types: application.leave_types,
+            });
+        });
+
         res.json(results);
     } catch (error) {
         console.error("Error fetching leave applications:", error);

@@ -6,6 +6,26 @@ const PrintLeaveApplication = ({ leaveRequest }) => {
     return <div>No leave request data available.</div>;
   }
 
+  // Parse the leave_details JSON string
+  const leaveDetails = leaveRequest.leave_details ? JSON.parse(leaveRequest.leave_details) : {};
+
+  // Extract fields from leaveDetails
+  const {
+    location,
+    abroadDetails: abroad_details,
+    illnessDetails: illness_details,
+    studyLeave: study_leave,
+    monetization,
+  } = leaveDetails;
+
+  // Log the parsed fields
+  console.log("Parsed leaveDetails:", leaveDetails);
+  console.log("location:", location);
+  console.log("abroad_details:", abroad_details);
+  console.log("illness_details:", illness_details);
+  console.log("study_leave:", study_leave);
+  console.log("monetization:", monetization);
+
   // List of all leave types
   const leaveTypes = [
     "Vacation Leave (Sec. 51, Rule XVI, Omnibus Rules Implementing E.O. No. 292)",
@@ -78,6 +98,8 @@ const PrintLeaveApplication = ({ leaveRequest }) => {
     <p className="small">{leaveRequest.salary || "N/A"}</p>
   </div>
 </div>
+<hr />
+    <h6 className="text-center">6. DETAILS OF APPLICATION</h6>
         </div>
         {/* Section 2: Type of Leave and Details */}
         <div className="border-bottom border-secondary py-2">
@@ -98,48 +120,107 @@ const PrintLeaveApplication = ({ leaveRequest }) => {
         ))}
       </div>
     </div>
+
     <div className="col-md-6 pl-2">
-      <p className="small font-weight-bold">6B. DETAILS OF LEAVE</p>
-      <div className="small">
-        <p>
-          <input type="checkbox" className="mr-2" /> In case of Vacation/Special Privilege Leave:
-        </p>
-        <p className="ml-4">
-          <input type="checkbox" className="mr-2" /> Within the Philippines
-        </p>
-        <p className="ml-4">
-          <input type="checkbox" className="mr-2" /> Abroad (Specify):{" "}
-          <span className="underline">_________________________</span>
-        </p>
-        <p>
-          <input type="checkbox" className="mr-2" /> In case of Sick Leave:
-        </p>
-        <p className="ml-4">
-          <input type="checkbox" className="mr-2" /> In Hospital (Specify Illness):{" "}
-          <span className="underline">_________________________</span>
-        </p>
-        <p className="ml-4">
-          <input type="checkbox" className="mr-2" /> Out Patient (Specify Illness):{" "}
-          <span className="underline">_________________________</span>
-        </p>
-        <p>
-          <input type="checkbox" className="mr-2" /> In case of Special Leave Benefits for Women:
-        </p>
-        <p className="ml-4">
-          <input type="checkbox" className="mr-2" /> Specify (Illness):{" "}
-          <span className="underline">_________________________</span>
-        </p>
-        <p>
-          <input type="checkbox" className="mr-2" /> Others:
-        </p>
-        <p className="ml-4">
-          <input type="checkbox" className="mr-2" /> Monetization of Leave Credits
-        </p>
-        <p className="ml-4">
-          <input type="checkbox" className="mr-2" /> Terminal Leave
-        </p>
-      </div>
-    </div>
+          <p className="small font-weight-bold">6B. DETAILS OF LEAVE</p>
+          <div className="small">
+            {/* Vacation/Special Privilege Leave */}
+            <p>
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; In case of Vacation/Special Privilege Leave:
+            </p>
+            <p className="ml-4">
+              <input
+                type="checkbox"
+                className="mr-2"
+                checked={location === 'Within Philippines'}
+                readOnly
+              /> Within the Philippines
+            </p>
+            <p className="ml-4">
+              <input
+                type="checkbox"
+                className="mr-2"
+                checked={location === 'Abroad'}
+                readOnly
+              /> Abroad (Specify):{" "}
+              <span className="underline">
+                {abroad_details || "_________________________"}
+              </span>
+            </p>
+
+            {/* Sick Leave */}
+            <p>
+              In case of Sick Leave:
+            </p>
+            <p className="ml-4">
+              <input
+                type="checkbox"
+                className="mr-2"
+                checked={illness_details === 'In Hospital'}
+                readOnly
+              /> In Hospital (Specify Illness):{" "}
+              <span className="underline">
+                {illness_details || "_________________________"}
+              </span>
+            </p>
+            <p className="ml-4">
+              <input
+                type="checkbox"
+                className="mr-2"
+                checked={illness_details === 'Out Patient'}
+                readOnly
+              /> Out Patient (Specify Illness):{" "}
+              <span className="underline">
+                {illness_details || "_________________________"}
+              </span>
+            </p>
+
+            {/* Study Leave */}
+                 
+              <p>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In case of Study Leave:
+              </p>
+              <p className="ml-4">
+                <input
+                  type="checkbox"
+                  className="mr-2"
+                  checked={study_leave === "Completion of Master's Degree"}
+                  readOnly
+                /> Completion of Master's Degree
+              </p>
+              <p className="ml-4">
+                <input
+                  type="checkbox"
+                  className="mr-2"
+                  checked={study_leave === "BAR/Board Examination Review"}
+                  readOnly
+                /> BAR/Board Examination Review
+              </p>
+              <p className="ml-4">
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; purpose :{" "}
+                <span className="underline">
+                  {study_leave === "Other" ? study_leave : "_________________________"}
+                </span>
+              </p>
+            {/* Monetization and Terminal Leave */}
+            <p className="ml-4">
+              <input
+                type="checkbox"
+                className="mr-2"
+                checked={monetization === 'Monetization of Leave Credits'}
+                readOnly
+              /> Monetization of Leave Credits
+            </p>
+            <p className="ml-4">
+              <input
+                type="checkbox"
+                className="mr-2"
+                checked={monetization === 'Terminal Leave'}
+                readOnly
+              /> Terminal Leave
+            </p>
+          </div>
+        </div>
   </div>
 </div>
 
@@ -221,9 +302,10 @@ const PrintLeaveApplication = ({ leaveRequest }) => {
                   </div>
                   </div>
                  </div>
-                    <p className="small mt-2">_________________________</p>
-                    <p className="small">(JULIUS CESAR L. DE LA CERNA)</p>
-                    <p className="small">AO IV / HRMO</p>
+                 <br />
+                    <p className="small text-center">(JULIUS CESAR L. DE LA CERNA)</p>
+                    <hr />
+                    <p className="small text-center font-bold">AO IV / HRMO</p>
                   </div>
                   <div className="col-md-6 pl-2">
                     <p className="small font-weight-bold">7B. RECOMMENDATION</p>
@@ -236,9 +318,16 @@ const PrintLeaveApplication = ({ leaveRequest }) => {
                   <span className="underline">_________________________</span>
                 </p>
               </div>
-              <p className="small mt-2">_________________________</p>
-              <p className="small">(JOSEMLIO P. RUIZ EdD, CESE)</p>
-              <p className="small">Assistant Schools Division Superintendent</p>
+              <p className="small mt-2">___________________________________________________ <br />
+              ___________________________________________________<br />
+              ___________________________________________________<br />
+              ___________________________________________________<br />
+              ___________________________________________________<br />
+              ___________________________________________________</p>
+              <br />
+              <p className="small text-center">(JOSEMLIO P. RUIZ EdD, CESE)</p>
+              <hr />
+              <p className="small text-center">Assistant Schools Division Superintendent</p>
             </div>
           </div>
         </div>
@@ -254,12 +343,17 @@ const PrintLeaveApplication = ({ leaveRequest }) => {
             </div>
             <div className="col-md-6">
               <p className="small font-weight-bold">7D. DISAPPROVED DUE TO:</p>
-              <p className="small">_________________________</p>
+              <p className="small">__________________________________________________ <br />
+              __________________________________________________ <br />
+              __________________________________________________ <br />
+              __________________________________________________ <br />__________________________________________________ <br /></p>
             </div>
+            <br />
+            <br />
           </div>
-          <div className="mt-2">
-            <p className="small">_________________________</p>
+          <div className="mt-2 text-center">
             <p className="small">(MANUEL P. ALBAÑO PHD, CESO V)</p>
+
             <p className="small">Schools Division Superintendent</p>
           </div>
         </div>
