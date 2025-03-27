@@ -144,7 +144,7 @@ const LoginForm = () => {
       </div>
       {/* Footer */}
       <footer className="text-white mt-4 text-center">
-        All rights reserved. Powered by Supplies Office Department Intern.
+     © {new Date().getFullYear()} Moreno. All rights reserved.
       </footer>
     </div>
   );

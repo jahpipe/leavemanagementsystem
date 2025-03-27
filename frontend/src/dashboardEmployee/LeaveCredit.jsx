@@ -35,6 +35,24 @@ const MyLeaveBalance = () => {
   const currentItems = balances.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(balances.length / itemsPerPage);
 
+  const cancelLeaveRequest = async (id) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/leave/cancel-leave/${id}`, {
+        method: "PUT",
+      });
+  
+      if (!response.ok) {
+        throw new Error("Failed to cancel leave request");
+      }
+  
+      // Refresh leave requests
+      fetchLeaveRequests(userId);
+    } catch (error) {
+      console.error("Error canceling leave request:", error);
+    }
+  };
+
+  
   return (
     <div className="container mt-5">
       <h4 className="text-center mb-4">My Leave Balances</h4>

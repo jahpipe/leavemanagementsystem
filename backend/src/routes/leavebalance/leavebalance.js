@@ -6,7 +6,7 @@ const router = express.Router();
 router.use(cors());
 router.use(express.json());
 
-// MySQL Connection Pool
+
 const db = mysql.createPool({
   host: "localhost",
   user: "root",

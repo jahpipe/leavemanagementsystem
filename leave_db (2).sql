@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 14, 2025 at 04:22 AM
+-- Generation Time: Mar 26, 2025 at 06:50 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -41,15 +41,11 @@ CREATE TABLE `employee_leave_balances` (
 --
 
 INSERT INTO `employee_leave_balances` (`id`, `user_id`, `leave_type_id`, `total_credit`, `used_credit`) VALUES
-(13, 43, 8, 3, 0),
-(14, 47, 3, 3, 2),
-(15, 47, 8, 3, 0),
-(16, 36, 8, 12, 0),
-(17, 36, 2, 123, 0),
-(18, 35, 2, 123, 0),
-(19, 39, 13, 12, 0),
-(20, 48, 14, 23, 2),
-(21, 54, 8, 2, 2);
+(33, 63, 3, 6, 4),
+(34, 64, 3, 25, 8),
+(35, 64, 8, 23, 2),
+(36, 65, 3, 2, 2),
+(37, 66, 1, 23, 4);
 
 -- --------------------------------------------------------
 
@@ -68,21 +64,28 @@ CREATE TABLE `leave_applications` (
   `illness_details` varchar(255) DEFAULT NULL,
   `study_leave` enum('Masters Degree','BAR/Board Examination Review','Other') DEFAULT NULL,
   `monetization` enum('Monetization of Leave Credits','Terminal Leave') DEFAULT NULL,
-  `commutation` enum('Requested','Not Requested') NOT NULL,
+  `commutation` tinyint(1) DEFAULT 0 COMMENT '0 = Not Requested, 1 = Requested',
   `status` enum('Pending','Approved','Rejected') DEFAULT 'Pending',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `rejection_message` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `leave_applications`
 --
 
-INSERT INTO `leave_applications` (`id`, `user_id`, `other_leave_type`, `leave_details`, `number_of_days`, `location`, `abroad_details`, `illness_details`, `study_leave`, `monetization`, `commutation`, `status`, `created_at`) VALUES
-(56, 43, NULL, '{\"location\":null,\"abroadDetails\":null,\"illnessDetails\":\"In Hospital\",\"studyLeave\":null}', 2, NULL, NULL, 'In Hospital', NULL, NULL, 'Requested', 'Rejected', '2025-03-11 05:28:10'),
-(57, 43, NULL, '{\"location\":null,\"abroadDetails\":null,\"illnessDetails\":\"In Hospital\",\"studyLeave\":null}', 1, NULL, NULL, 'In Hospital', NULL, NULL, 'Requested', 'Approved', '2025-03-11 05:29:17'),
-(58, 47, NULL, '{\"location\":null,\"abroadDetails\":null,\"illnessDetails\":\"In Hospital\",\"studyLeave\":null}', 2, NULL, NULL, 'In Hospital', NULL, NULL, 'Requested', 'Approved', '2025-03-11 06:02:41'),
-(59, 48, 'magtagai, manglaag', '{\"location\":null,\"abroadDetails\":null,\"illnessDetails\":null,\"studyLeave\":null}', 2, NULL, NULL, NULL, NULL, NULL, 'Requested', 'Approved', '2025-03-13 03:02:08'),
-(60, 54, NULL, '{\"location\":null,\"abroadDetails\":null,\"illnessDetails\":null,\"studyLeave\":\"Completion of Master\'s Degree\"}', 2, NULL, NULL, NULL, '', NULL, 'Requested', 'Approved', '2025-03-13 08:34:06');
+INSERT INTO `leave_applications` (`id`, `user_id`, `other_leave_type`, `leave_details`, `number_of_days`, `location`, `abroad_details`, `illness_details`, `study_leave`, `monetization`, `commutation`, `status`, `created_at`, `rejection_message`) VALUES
+(75, 63, NULL, '{\"location\":null,\"abroadDetails\":null,\"illnessDetails\":\"In Hospital\",\"studyLeave\":null}', 2, NULL, NULL, 'In Hospital', NULL, NULL, 1, 'Rejected', '2025-03-21 03:45:53', 'there are to many absents'),
+(76, 64, NULL, '{\"location\":null,\"abroadDetails\":null,\"illnessDetails\":\"In Hospital\",\"studyLeave\":\"Completion of Master\'s Degree\"}', 1, NULL, NULL, 'In Hospital', '', NULL, 1, '', '2025-03-24 01:42:11', NULL),
+(77, 64, NULL, '{\"location\":null,\"abroadDetails\":null,\"illnessDetails\":\"In Hospital\",\"studyLeave\":null}', 1, NULL, NULL, 'In Hospital', NULL, NULL, 1, '', '2025-03-24 02:07:25', NULL),
+(78, 64, NULL, '{\"location\":\"Within the Philippines\",\"abroadDetails\":null,\"illnessDetails\":\"In Hospital\",\"studyLeave\":null}', 1, '', NULL, 'In Hospital', NULL, NULL, 1, '', '2025-03-24 02:08:38', NULL),
+(81, 64, NULL, '{\"location\":null,\"abroadDetails\":null,\"illnessDetails\":\"In Hospital\",\"studyLeave\":null}', 1, NULL, NULL, 'In Hospital', NULL, NULL, 1, 'Approved', '2025-03-24 02:25:18', ''),
+(83, 65, NULL, '{\"location\":null,\"abroadDetails\":null,\"illnessDetails\":\"In Hospital\",\"studyLeave\":null}', 2, NULL, NULL, 'In Hospital', NULL, NULL, 1, 'Rejected', '2025-03-24 07:35:56', 'daghan kag late'),
+(84, 64, NULL, '{\"location\":null,\"abroadDetails\":null,\"illnessDetails\":\"In Hospital\",\"studyLeave\":null}', 1, NULL, NULL, 'In Hospital', NULL, NULL, 1, 'Rejected', '2025-03-24 07:38:17', 'no'),
+(85, 63, NULL, '{\"location\":null,\"abroadDetails\":null,\"illnessDetails\":\"In Hospital\",\"studyLeave\":null}', 2, NULL, NULL, 'In Hospital', NULL, NULL, 1, 'Approved', '2025-03-24 07:38:47', ''),
+(86, 66, NULL, '{\"location\":\"Within the Philippines\",\"abroadDetails\":null,\"illnessDetails\":null,\"studyLeave\":null}', 3, '', NULL, NULL, NULL, NULL, 1, 'Approved', '2025-03-25 05:35:20', ''),
+(87, 66, NULL, '{\"location\":\"Within the Philippines\",\"abroadDetails\":\"shabshara mindano\",\"illnessDetails\":null,\"studyLeave\":null}', 1, '', 'shabshara mindano', NULL, '', '', 1, 'Approved', '2025-03-25 06:38:40', ''),
+(88, 66, NULL, '{\"location\":\"Abroad\",\"abroadDetails\":\"newyork\",\"illnessDetails\":null,\"studyLeave\":null}', 1, 'Abroad', 'newyork', NULL, NULL, NULL, 0, 'Approved', '2025-03-25 07:17:51', '');
 
 -- --------------------------------------------------------
 
@@ -101,11 +104,18 @@ CREATE TABLE `leave_application_types` (
 --
 
 INSERT INTO `leave_application_types` (`id`, `leave_application_id`, `leave_type_id`) VALUES
-(59, 56, 3),
-(60, 57, 3),
-(61, 58, 3),
-(62, 59, 14),
-(63, 60, 8);
+(79, 75, 3),
+(80, 76, 3),
+(81, 76, 8),
+(82, 77, 3),
+(83, 78, 3),
+(87, 81, 3),
+(89, 83, 3),
+(90, 84, 3),
+(91, 85, 3),
+(92, 86, 1),
+(93, 87, 1),
+(94, 88, 1);
 
 -- --------------------------------------------------------
 
@@ -139,15 +149,26 @@ CREATE TABLE `leave_dates` (
 --
 
 INSERT INTO `leave_dates` (`id`, `leave_application_id`, `leave_date`) VALUES
-(75, 56, '2025-05-07'),
-(76, 56, '2025-05-09'),
-(77, 57, '2025-05-27'),
-(78, 58, '2025-05-07'),
-(79, 58, '2025-05-09'),
-(80, 59, '2025-05-07'),
-(81, 59, '2025-05-09'),
-(82, 60, '2025-05-07'),
-(83, 60, '2025-05-09');
+(107, 75, '2025-05-07'),
+(108, 75, '2025-05-09'),
+(109, 76, '2025-05-07'),
+(110, 76, '2025-05-09'),
+(111, 77, '2025-05-07'),
+(112, 77, '2025-05-09'),
+(113, 78, '2025-05-07'),
+(117, 81, '2025-05-07'),
+(118, 81, '2025-05-09'),
+(120, 83, '2025-05-07'),
+(121, 83, '2025-05-09'),
+(122, 84, '2025-05-07'),
+(123, 84, '2025-05-09'),
+(124, 85, '2025-05-07'),
+(125, 85, '2025-05-09'),
+(126, 86, '2025-05-07'),
+(127, 86, '2025-05-09'),
+(128, 86, '2025-05-19'),
+(129, 87, '2025-05-07'),
+(130, 88, '2025-05-07');
 
 -- --------------------------------------------------------
 
@@ -196,27 +217,28 @@ CREATE TABLE `users` (
   `role` enum('admin','employee') NOT NULL,
   `middleName` varchar(100) DEFAULT NULL,
   `position` varchar(100) DEFAULT NULL,
-  `salary` decimal(10,2) DEFAULT NULL
+  `salary` decimal(10,2) DEFAULT NULL,
+  `place_of_birth` varchar(255) DEFAULT NULL,
+  `date_of_birth` date DEFAULT NULL,
+  `permanent_address` text DEFAULT NULL,
+  `special_order_no` varchar(255) DEFAULT NULL,
+  `status_of_employment` varchar(255) DEFAULT NULL,
+  `effective_date` date DEFAULT NULL,
+  `nature_of_appointment` varchar(255) DEFAULT NULL,
+  `school_assignment` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `fullName`, `lastName`, `contact`, `username`, `password`, `role`, `middleName`, `position`, `salary`) VALUES
-(19, 'moreno', 'moreno', '123123', 'moreno', '$2b$10$s62pg4G.G2J218Q4uSxn2eq1Z34CsJdhgvMrMp.URyXWHkDkwJNVu', 'admin', 'A', NULL, NULL),
-(35, 'lorabell', 'alcos', '123-123', 'lorabell', '$2b$10$1KEpTM/5I87xnVXatj1XVupmR8WoXdw8ZkjsG03U/lnTlREQk1B6.', 'employee', 'rasta', 'Assistant Schools Division Superintendent', 50000.00),
-(36, 'claire', 'servande', '123123', 'servande', '$2b$10$QTshaH8vkFy66X/ov1xat.M38t3ghXLKtSyU42WVKQOgiOvdu.jtC', 'employee', 'rasta', 'Assistant Schools Division Superintendent', 240000.00),
-(37, 'christine', 'christine', '1273', 'christine', '$2b$10$f/lEMNp.lb0iW1G01SUmme3GC6CSeXZHNDPF6YQhmwWJWeatOXkKi', 'employee', 'S', 'information technologoy support', 240000.00),
-(38, 'babalik', 'babalik', '123', 'babalik', '$2b$10$OI8GCCrKL2zAlIsKjN/93Outy9ZUKJUAl4WDqK.WRrWz3L4I3ZPLu', 'employee', 'F', 'junior officer', 2400.00),
-(39, 'sangkoko', 'picolo', '123213', 'sangkoko', '$2b$10$s6xrjhIqXO71qF1.T7g0/.YKxzC5Au2DhB51m9ajHkxPm6v5qlXnq', 'employee', 'G', 'junior officer', 50000.00),
-(40, 'rene', 'rene', '123123', 'renerene', '$2b$10$my6CRupEtyDh41U0VMaXb.3AKKHGie0tosNkP0EOYOoNBNNCt8UGq', 'employee', 'S', 'Superintendent', 100000.00),
-(41, 'cathlyen', 'joy', '123123', 'cathlyen', '$2b$10$QSvxIoh4EGwjcjLphmNYiu/oXKzwloBEhhFSR.qaFEU7biU1lej/a', 'employee', NULL, NULL, NULL),
-(43, 'bingoy', 'bingoy', '123123', 'bingoy', '$2b$10$kJYvPH78Td8BBv/4qRXEqOtCt5Dzb.5Q0lFB8rE2Xi/7SR8e9V7PC', 'employee', 'S', 'Superintendent', 2333333.00),
-(47, 'angelo', 'tabinas', '123123', 'tabinas', '$2b$10$Z1wuEqYIG1zMXWI6FKSgeOlCOG2xaSZtf5naD2yevWgd1CwrGH28i', 'employee', NULL, NULL, NULL),
-(48, 'choyaks', 'choyaks', '123132', 'choyaks', '$2b$10$lhHzA15cE2H9GatoQYsXKuWlEnvxDIjwUxCY6TLnTrJL/laRft68O', 'employee', NULL, NULL, NULL),
-(53, 'browner', 'Bagol', '123124', 'browner', '$2b$10$6WzkC8DGnRUmWHI1h0LfoOV8WIJG/FnPyMnU5yhTPVryPCqMw6cDi', 'employee', 'M', 'Assistant Schools Division Superintendent', 240000.00),
-(54, 'jessica', 'latoreno', '123812', 'jessica', '$2b$10$0OmNvYNgRXWMhqSjH4DvvOq.usBmJaQKbc/4hq51lEfqMylnjZ.d6', 'employee', 'M', 'Assistant Schools Division Superintendent', 230000.00);
+INSERT INTO `users` (`id`, `fullName`, `lastName`, `contact`, `username`, `password`, `role`, `middleName`, `position`, `salary`, `place_of_birth`, `date_of_birth`, `permanent_address`, `special_order_no`, `status_of_employment`, `effective_date`, `nature_of_appointment`, `school_assignment`) VALUES
+(19, 'moreno', 'moreno', '123123', 'moreno', '$2b$10$Fva8QRB8iUURYGn3yfQzaexSoA3vg1uK0pJusjyN3jv/8ELeiQlCW', 'admin', 'A', 'ADMINISTRETOR', 99999999.99, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(63, 'lorabell', 'tabinas', '13131', 'lorabell', '$2b$10$89BaLtwGmFCWG/BiMsKIee0b1J0r9Se1CPRwxwuq74LDDmz/LLkRq', 'employee', 'alcos', 'OFFICER', 25000.00, 'BAYBAY LEYTE CITY', '2025-03-21', 'BOYHANG', 'KS#22', 'PERMANENT', '2025-03-21', 'ORIGINAL', 'POMPONAN HIGH SCHOOL'),
+(64, 'cleaire', 'Moreno', '13132', 'cleaire', '$2b$10$ThqDLFBOrlskROVNS1PhVeciT0.iZJCO26B1fERgf53m2qf8KIxBK', 'employee', 'S', 'Teacher', 24000.00, 'BAYBAY LEYTE CITY', '2006-08-24', 'ZONE 15', 'KS#42', 'PERMANENT', '2025-03-24', 'ORIGINAL', 'BALINTAWAK ELEM SCHOOL'),
+(65, 'karap', 'karap', 'karap', 'karapkarap', '$2b$10$95Kd.GfU.70H190bLj3CHOwHqmGvQ1I6YcAvuPhym02RvM.zO4/qG', 'employee', 'karap', 'karap', 2312313.00, 'karap', '2025-01-29', 'karap', 'karap', 'karap', '2025-03-24', 'karap', 'karap'),
+(66, 'butanding', 'butanding', 'butanding', 'butanding', '$2b$10$11TeFWa53Z5wDkVpeQisHuX7p.KiXBmx46xJZbJ.2tQe3HJhaXxpC', 'employee', 'butanding', 'butanding', 1333333.00, 'butanding', '2025-03-25', 'butanding', 'butanding', 'butanding', '2025-03-27', 'butanding', 'butanding'),
+(67, 'Angelo', 'Tabinas', '0923123123', 'ANGELO', '$2b$10$s5hjF8EbHmVukN7iLqNHbeT9UqMJDX1OleKHUAvIcMABW7omPrO3K', 'employee', 'P', 'Assistant Schools Division Superintendent', 45000.00, 'BAYBAY LEYTE CITY', '1994-07-26', 'BUNGA BAYBAY', 'KSS#552', 'PERMANENT', '2025-03-26', 'ORIGINAL', 'SURSOGON ELEMENTARY SCHOOL');
 
 --
 -- Indexes for dumped tables
@@ -281,19 +303,19 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `employee_leave_balances`
 --
 ALTER TABLE `employee_leave_balances`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
 --
 -- AUTO_INCREMENT for table `leave_applications`
 --
 ALTER TABLE `leave_applications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=89;
 
 --
 -- AUTO_INCREMENT for table `leave_application_types`
 --
 ALTER TABLE `leave_application_types`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=64;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=95;
 
 --
 -- AUTO_INCREMENT for table `leave_balances`
@@ -305,7 +327,7 @@ ALTER TABLE `leave_balances`
 -- AUTO_INCREMENT for table `leave_dates`
 --
 ALTER TABLE `leave_dates`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=84;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=131;
 
 --
 -- AUTO_INCREMENT for table `leave_types`
@@ -317,7 +339,7 @@ ALTER TABLE `leave_types`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
 
 --
 -- Constraints for dumped tables

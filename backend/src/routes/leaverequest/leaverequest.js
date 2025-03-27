@@ -6,7 +6,7 @@ const router = express.Router();
 router.use(cors());
 router.use(express.json());
 
-// MySQL Connection Pool
+
 const db = mysql.createPool({
     host: "localhost",
     user: "root",
@@ -123,42 +123,43 @@ router.post("/apply-leave", async (req, res) => {
 });
 
 
-// Fetch all leave applications with multiple leave types and dates
+
 // Fetch all leave applications with multiple leave types and dates
 router.get("/leave-applications", async (req, res) => {
     try {
         console.log("Fetching all leave applications...");
 
         const query = `
-            SELECT 
-                la.id,
-                la.user_id,
-                la.location,
-                la.abroad_details,
-                la.illness_details,
-                la.study_leave,
-                la.monetization,
-                la.commutation,
-                la.status,
-                la.created_at,
-                la.rejection_message,
-                GROUP_CONCAT(DISTINCT DATE_FORMAT(lad.leave_date, '%M %d, %Y') ORDER BY lad.leave_date ASC) AS leave_dates,
-                GROUP_CONCAT(DISTINCT lt.name ORDER BY lt.name ASC) AS leave_types
-            FROM leave_applications la
-            LEFT JOIN leave_dates lad ON la.id = lad.leave_application_id
-            LEFT JOIN leave_application_types lat ON la.id = lat.leave_application_id
-            LEFT JOIN leave_types lt ON lat.leave_type_id = lt.id
-            GROUP BY la.id
-            ORDER BY la.created_at DESC
-            LIMIT 0, 25
+           SELECT 
+    la.id,
+    la.user_id,
+    la.location,
+    la.abroad_details,
+    la.illness_details,
+    la.study_leave,
+    la.monetization,
+    la.commutation,
+    la.status,
+    la.created_at,
+    la.rejection_message,
+    u.school_assignment,  // Matches school_assignment in the frontend
+    GROUP_CONCAT(DISTINCT DATE_FORMAT(lad.leave_date, '%M %d, %Y') AS leave_dates,  // Matches leave_dates in the frontend
+    GROUP_CONCAT(DISTINCT lt.name ORDER BY lt.name ASC) AS leave_types  // Matches leave_types in the frontend
+FROM leave_applications la
+LEFT JOIN leave_dates lad ON la.id = lad.leave_application_id
+LEFT JOIN leave_application_types lat ON la.id = lat.leave_application_id
+LEFT JOIN leave_types lt ON lat.leave_type_id = lt.id
+LEFT JOIN users u ON la.user_id = u.id  // Joins the users table to fetch school_assignment
+GROUP BY la.id, u.school_assignment
+ORDER BY la.created_at DESC
         `;
 
         const [results] = await db.execute(query);
 
-        // Log the fetched leave applications
+s
         console.log("Fetched leave applications:", results.length);
 
-        // Log each leave application to verify the data for Section 6B
+   
         results.forEach((application, index) => {
             console.log(`Leave Application #${index + 1}:`, {
                 id: application.id,
@@ -172,6 +173,7 @@ router.get("/leave-applications", async (req, res) => {
                 status: application.status,
                 created_at: application.created_at,
                 rejection_message: application.rejection_message,
+                school_assignment: application.school_assignment,  
                 leave_dates: application.leave_dates,
                 leave_types: application.leave_types,
             });

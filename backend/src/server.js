@@ -4,7 +4,6 @@ const cors = require('cors');
 
 const router = express.Router();
 
-
 const loginRouter = require('./routes/login/login');
 const registerRouter = require('./routes/register/register');
 const viewemployeRouter = require('./routes/viewemploye/viewemploye'); 
@@ -13,8 +12,8 @@ const leaveRouter = require("./routes/leaves/leaves");
 const leaveapprovalRouter = require('./routes/leaveaporval/leaveaproval');
 const leaveBalanceRoutes = require('./routes/leavebalance/leavebalance')
 const reportsRoutes = require('./routes/reports/reports');
-
-
+const adminRoutes = require('./routes/Dashboard/dashboard');
+const empdashboardRoutes = require('./routes/EmpDashboard/empdashboard')
 
 // Middleware
 const app = express();
@@ -30,8 +29,6 @@ const db = mysql.createConnection({
     port: '3306'
 });
 
-
-
 // Connect to MySQL
 db.connect(err => {
   if (err) {
@@ -45,12 +42,13 @@ db.connect(err => {
 app.use('/api/login', loginRouter);
 app.use('/api/register', registerRouter);
 app.use('/users', viewemployeRouter);
-app.use('/api/leaverequest', leaverequestRouter )
+app.use('/api/leaverequest', leaverequestRouter)
 app.use("/api/leave", leaveRouter);
 app.use('/api/leaveapproval', leaveapprovalRouter);
 app.use("/api", leaveBalanceRoutes);
 app.use("/api/reports", reportsRoutes)
-
+app.use('/api/admin', adminRoutes); 
+app.use('/api/empdashboard', empdashboardRoutes); 
 
 // Start the server
 const PORT = process.env.PORT || 8000;

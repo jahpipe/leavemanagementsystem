@@ -38,6 +38,30 @@ const MyLeaveRequest = () => {
     }
   };
 
+  const deleteLeaveRequest = async (id) => {
+    try {
+        const response = await fetch(`http://localhost:8000/api/leave/delete-leave/${id}`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to delete leave request");
+        }
+
+        alert("Leave request deleted successfully!");
+
+        // ✅ Refresh leave requests after deletion
+        fetchLeaveRequests(userId);
+    } catch (error) {
+        console.error("Error deleting leave request:", error);
+    }
+};
+
+
+
+  
+
   const filteredRequests = leaveRequests.filter((request) =>
     filter === "All" ? true : request.status === filter
   );
@@ -80,6 +104,7 @@ const MyLeaveRequest = () => {
                   <th>Inclusive Dates</th>
                   <th>Status</th>
                   {filter === "Rejected" && <th>Rejection Reason</th>}
+                  {filter === "Pending" && <th>Action</th>}
                 </tr>
               </thead>
               <tbody>
@@ -113,33 +138,22 @@ const MyLeaveRequest = () => {
                           {request.rejection_message ? request.rejection_message : "No reason provided"}
                         </td>
                       )}
+                      {filter === "Pending" && (
+                        <td>
+                            <button
+                                className="btn btn-danger btn-sm"
+                                onClick={() => deleteLeaveRequest(request.id)}
+                            >
+                                Delete
+                            </button>
+                        </td>
+                    )}
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
           </div>
-          <nav>
-            <ul className="pagination justify-content-center">
-              <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
-                <button className="page-link" onClick={() => setCurrentPage(currentPage - 1)}>
-                  Previous
-                </button>
-              </li>
-              {[...Array(totalPages).keys()].map((number) => (
-                <li key={number} className={`page-item ${currentPage === number + 1 ? "active" : ""}`}>
-                  <button className="page-link" onClick={() => setCurrentPage(number + 1)}>
-                    {number + 1}
-                  </button>
-                </li>
-              ))}
-              <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
-                <button className="page-link" onClick={() => setCurrentPage(currentPage + 1)}>
-                  Next
-                </button>
-              </li>
-            </ul>
-          </nav>
         </>
       )}
     </div>

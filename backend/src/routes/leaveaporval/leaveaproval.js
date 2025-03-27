@@ -36,6 +36,7 @@ router.get("/:status", async (req, res) => {
         u.middleName,
         u.position,
         u.salary,
+        u.school_assignment,
         GROUP_CONCAT(DISTINCT lt.name) AS leave_types, 
         GROUP_CONCAT(DISTINCT DATE_FORMAT(ld.leave_date, '%Y-%m-%d')) AS leave_dates
       FROM leave_applications la
@@ -116,6 +117,46 @@ router.post("/:id/sendmessage", async (req, res) => {
   } catch (error) {
     console.error("Error sending rejection message:", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/leave-balances/:userId", async (req, res) => {
+  let connection;
+  try {
+    connection = await db.getConnection();
+    const userId = req.params.userId;
+
+    // Fetch all leave balances for the user
+    const [balances] = await connection.execute(
+      `SELECT 
+        lt.name AS leave_type_name,
+        elb.total_credit,
+        elb.used_credit,
+        elb.remaining_credit
+      FROM employee_leave_balances elb
+      JOIN leave_types lt ON elb.leave_type_id = lt.id
+      WHERE elb.user_id = ?`,
+      [userId]
+    );
+
+    // Transform the data into a more frontend-friendly format
+    const transformedBalances = balances.reduce((acc, balance) => {
+      acc[balance.leave_type_name.replace(/\s+/g, '_').toLowerCase()] = {
+        total_credit: balance.total_credit,
+        used_credit: balance.used_credit,
+        remaining_credit: balance.remaining_credit
+      };
+      return acc;
+    }, {});
+
+    res.json(transformedBalances);
+
+  } catch (error) {
+    console.error("Error fetching leave balances:", error);
+    res.status(500).json({ error: "Internal server error" });
+
+  } finally {
+    if (connection) connection.release();
   }
 });
 
