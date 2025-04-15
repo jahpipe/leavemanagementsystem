@@ -52,16 +52,7 @@ const AdminDashboard = () => {
       case "viewUsers": return <UserView />;
       case "leaves": return <LeaveRequest />;
       case "balance": return <ManageBalance />;
-      case "settings": return (
-        <div className="p-4">
-          <h3 className="mb-4">Settings</h3>
-          <div className="card shadow-sm">
-            <div className="card-body">
-              <p className="text-muted">Settings content goes here</p>
-            </div>
-          </div>
-        </div>
-      );
+   
       default: return <Admin />;
     }
   };
@@ -169,13 +160,7 @@ const AdminDashboard = () => {
             {isSidebarOpen && <span>Balance</span>}
           </button>
 
-          <button
-            className={`btn btn-link text-start text-dark d-flex align-items-center mb-2 px-3 py-2 rounded ${activeTab === "settings" ? "bg-primary bg-opacity-10 text-primary" : "hover-bg-light"}`}
-            onClick={() => setActiveTab("settings")}
-          >
-            <FiSettings className={`${isSidebarOpen ? "me-3" : "mx-auto"}`} size={18} />
-            {isSidebarOpen && <span>Settings</span>}
-          </button>
+          
         </nav>
 
         {/* Logout */}

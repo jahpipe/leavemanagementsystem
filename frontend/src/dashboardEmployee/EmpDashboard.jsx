@@ -16,38 +16,93 @@ const EmployeeDashboard = () => {
   const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [leaveData, setLeaveData] = useState({
+    balance: {
+      total: 0,
+      sick: 0,
+      vacation: 0,
+      emergency: 0
+    },
+    pending: 0,
+    approved: 0,
+    upcoming: [],
+    recent: []
+  });
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Mock data - replace with actual API calls
-  const leaveData = {
-    balance: {
-      total: 12,
-      sick: 5,
-      vacation: 7,
-      emergency: 3
-    },
-    pending: 2,
-    approved: 5,
-    upcoming: [
-      { type: "Vacation", date: "Jun 15-20, 2023", status: "approved" },
-      { type: "Sick", date: "Jul 5, 2023", status: "approved" }
-    ],
-    recent: [
-      { type: "Emergency", date: "May 28, 2023", status: "approved" },
-      { type: "Vacation", date: "May 15-17, 2023", status: "rejected" }
-    ]
+  // Fetch leave balances and stats
+  // Update the fetchLeaveData function in useEffect
+useEffect(() => {
+  const fetchLeaveData = async () => {
+    if (!user?.id) return;
+
+    try {
+      setIsLoading(true);
+      
+      // Update these URLs to match your backend server address
+      const baseUrl = 'http://localhost:8000'; // or whatever port your backend uses
+      
+      // Fetch leave balances
+      const balanceResponse = await fetch(`${baseUrl}/api/empdashboard/leave-balances/${user.id}`);
+      if (!balanceResponse.ok) {
+        throw new Error(`Failed to fetch leave balances: ${balanceResponse.statusText}`);
+      }
+      const balanceData = await balanceResponse.json();
+
+      // Fetch upcoming leaves
+      const upcomingResponse = await fetch(`${baseUrl}/api/empdashboard/upcoming-leaves/${user.id}`);
+      if (!upcomingResponse.ok) {
+        throw new Error(`Failed to fetch upcoming leaves: ${upcomingResponse.statusText}`);
+      }
+      const upcomingData = await upcomingResponse.json();
+
+      // Format the data
+      const formattedData = {
+        balance: balanceData.balance || {
+          total: 0,
+          sick: 0,
+          vacation: 0,
+          emergency: 0
+        },
+        upcoming: upcomingData.map(leave => ({
+          type: leave.leave_type,
+          date: new Date(leave.leave_date).toLocaleDateString(),
+          status: leave.status.toLowerCase()
+        })),
+        pending: upcomingData.filter(leave => leave.status === 'Pending').length,
+        approved: upcomingData.filter(leave => leave.status === 'Approved').length
+      };
+
+      setLeaveData(formattedData);
+    } catch (error) {
+      console.error('Error fetching leave data:', error);
+      // Show error state to user
+      setLeaveData({
+        balance: { total: 0, sick: 0, vacation: 0, emergency: 0 },
+        pending: 0,
+        approved: 0,
+        upcoming: []
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  fetchLeaveData();
+}, [user?.id]);
+
+  // User authentication check
   useEffect(() => {
     const loggedInUser = localStorage.getItem("user");
     if (loggedInUser) {
       const userData = JSON.parse(loggedInUser);
       setUser(userData);
       
-      // Mock notifications
+      // Fetch notifications (you can replace this with actual API call)
       setNotifications([
-        { id: 1, text: "Your vacation leave for June has been approved", time: "2 hours ago", read: false },
-        { id: 2, text: "New company policy update available", time: "1 day ago", read: true }
+        { id: 1, text: "Your leave request has been approved", time: "2 hours ago", read: false },
+        { id: 2, text: "New policy update", time: "1 day ago", read: true }
       ]);
     } else {
       navigate("/login");
@@ -67,6 +122,34 @@ const EmployeeDashboard = () => {
     ));
   };
 
+  const statsCards = [
+    { 
+      title: "Leave Balance", 
+      value: `${leaveData.balance.total} Days`, 
+      subtitle: `${leaveData.balance.sick} SL | ${leaveData.balance.vacation} VL`, 
+      icon: <FaBalanceScale size={24} />,
+      color: "primary",
+      bg: "primary-subtle"
+    },
+    { 
+      title: "Pending Requests", 
+      value: leaveData.pending, 
+      subtitle: "Awaiting approval", 
+      icon: <MdPendingActions size={24} />,
+      color: "warning",
+      bg: "warning-subtle"
+    },
+    { 
+      title: "Approved Leaves", 
+      value: leaveData.approved, 
+      subtitle: "This year", 
+      icon: <MdApproval size={24} />,
+      color: "success",
+      bg: "success-subtle"
+    },
+
+  ];
+  
   return (
     <div className="container-fluid p-0 min-vh-100 bg-light">
       {/* Mobile Header */}
@@ -119,7 +202,7 @@ const EmployeeDashboard = () => {
                 { key: "apply", label: "Apply for Leave", icon: <FaPaperPlane className="me-2" /> },
                 { key: "requests", label: "My Requests", icon: <FaList className="me-2" /> },
                 { key: "balance", label: "Leave Balance", icon: <FaBalanceScale className="me-2" /> },
-                { key: "settings", label: "Settings", icon: <FaCog className="me-2" /> },
+
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -205,11 +288,7 @@ const EmployeeDashboard = () => {
                     <span className="me-2 d-none d-lg-inline">{user.fullName.split(' ')[0]}</span>
                     <FaUserCircle size={24} />
                   </button>
-                  <ul className="dropdown-menu dropdown-menu-end">
-                    <li><button className="dropdown-item" onClick={() => setActiveTab("settings")}>Profile</button></li>
-                    <li><hr className="dropdown-divider" /></li>
-                    <li><button className="dropdown-item" onClick={handleLogout}>Logout</button></li>
-                  </ul>
+                  
                 </div>
               )}
             </div>
@@ -217,208 +296,215 @@ const EmployeeDashboard = () => {
 
           {/* Main Content Area */}
           <main className="p-4">
-            {/* Dashboard Tab */}
-            {activeTab === "dashboard" && user && (
-              <div>
-                <div className="row mb-4">
-                  <div className="col-12">
-                    <h2 className="mb-1">Welcome back, {user.fullName.split(' ')[0]}!</h2>
-                    <p className="text-muted">Here's your leave management summary</p>
+  {/* Dashboard Tab */}
+  {activeTab === "dashboard" && user && (
+    <div>
+      {isLoading ? (
+        <div className="text-center py-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="row mb-4">
+            <div className="col-12">
+              <h2 className="mb-1">Welcome back, {user.fullName.split(' ')[0]}!</h2>
+              <p className="text-muted">Here's your leave management summary</p>
+            </div>
+          </div>
+          
+          {/* Stats Cards */}
+          <div className="row g-4 mb-4">
+            {[
+              { 
+                title: "Leave Balance", 
+                value: `${Number(leaveData.balance.total).toFixed(1)} Days`, 
+                subtitle: `${Number(leaveData.balance.sick).toFixed(1)} SL | ${Number(leaveData.balance.vacation).toFixed(1)} VL`, 
+                icon: <FaBalanceScale size={24} />,
+                color: "primary",
+                bg: "primary-subtle"
+              },
+              { 
+                title: "Pending Requests", 
+                value: leaveData.pending || 0, 
+                subtitle: "Awaiting approval", 
+                icon: <MdPendingActions size={24} />,
+                color: "warning",
+                bg: "warning-subtle"
+              },
+              { 
+                title: "Approved Leaves", 
+                value: leaveData.approved || 0, 
+                subtitle: "This year", 
+                icon: <MdApproval size={24} />,
+                color: "success",
+                bg: "success-subtle"
+              },
+             
+            ].map((stat, index) => (
+              <div key={index} className="col-md-6 col-lg-3">
+                <div className={`card border-0 bg-${stat.bg} h-100`}>
+                  <div className="card-body">
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div>
+                        <h6 className="text-muted mb-2">{stat.title}</h6>
+                        <h3 className="mb-1">{stat.value}</h3>
+                        <small className="text-muted">{stat.subtitle}</small>
+                      </div>
+                      <div className={`text-${stat.color} bg-white rounded-circle p-3 d-flex align-items-center justify-content-center`} 
+                           style={{ width: "50px", height: "50px" }}>
+                        {stat.icon}
+                      </div>
+                    </div>
                   </div>
                 </div>
-                
-                {/* Stats Cards */}
-                <div className="row g-4 mb-4">
-                  {[
-                    { 
-                      title: "Leave Balance", 
-                      value: `${leaveData.balance.total} Days`, 
-                      subtitle: `${leaveData.balance.sick} SL | ${leaveData.balance.vacation} VL`, 
-                      icon: <FaBalanceScale size={24} />,
-                      color: "primary",
-                      bg: "primary-subtle"
-                    },
-                    { 
-                      title: "Pending Requests", 
-                      value: leaveData.pending, 
-                      subtitle: "Awaiting approval", 
-                      icon: <MdPendingActions size={24} />,
-                      color: "warning",
-                      bg: "warning-subtle"
-                    },
-                    { 
-                      title: "Approved Leaves", 
-                      value: leaveData.approved, 
-                      subtitle: "This year", 
-                      icon: <MdApproval size={24} />,
-                      color: "success",
-                      bg: "success-subtle"
-                    },
-                    { 
-                      title: "Emergency Leaves", 
-                      value: leaveData.balance.emergency, 
-                      subtitle: "Remaining", 
-                      icon: <FaChartPie size={24} />,
-                      color: "info",
-                      bg: "info-subtle"
-                    }
-                  ].map((stat, index) => (
-                    <div key={index} className="col-md-6 col-lg-3">
-                      <div className={`card border-0 bg-${stat.bg} h-100`}>
-                        <div className="card-body">
-                          <div className="d-flex justify-content-between align-items-center">
-                            <div>
-                              <h6 className="text-muted mb-2">{stat.title}</h6>
-                              <h3 className="mb-1">{stat.value}</h3>
-                              <small className="text-muted">{stat.subtitle}</small>
-                            </div>
-                            <div className={`text-${stat.color} bg-white rounded-circle p-3 d-flex align-items-center justify-content-center`} 
-                                 style={{ width: "50px", height: "50px" }}>
-                              {stat.icon}
-                            </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Two Column Layout */}
+          <div className="row g-4">
+            {/* Upcoming Leaves */}
+            <div className="col-lg-6">
+              <div className="card border-0 shadow-sm h-100">
+                <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                  <h5 className="mb-0">
+                    <FaCalendarAlt className="me-2 text-primary" />
+                    Upcoming Leaves
+                  </h5>
+                  <button 
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={() => setActiveTab("requests")}
+                  >
+                    View All
+                  </button>
+                </div>
+                <div className="card-body">
+                  {leaveData.upcoming.length > 0 ? (
+                    <div className="list-group">
+                      {leaveData.upcoming.map((leave, index) => (
+                        <div key={index} className="list-group-item border-0 d-flex justify-content-between align-items-center py-3">
+                          <div>
+                            <strong>{leave.type}</strong>
+                            <div className="text-muted">{new Date(leave.date).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            })}</div>
                           </div>
+                          <span className={`badge bg-${leave.status.toLowerCase() === 'approved' ? 'success' : 'warning'}`}>
+                            {leave.status}
+                          </span>
                         </div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-                
-                {/* Two Column Layout */}
-                <div className="row g-4">
-                  {/* Upcoming Leaves */}
-                  <div className="col-lg-6">
-                    <div className="card border-0 shadow-sm h-100">
-                      <div className="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                        <h5 className="mb-0">
-                          <FaCalendarAlt className="me-2 text-primary" />
-                          Upcoming Leaves
-                        </h5>
-                        <button 
-                          className="btn btn-sm btn-outline-primary"
-                          onClick={() => setActiveTab("requests")}
-                        >
-                          View All
-                        </button>
-                      </div>
-                      <div className="card-body">
-                        {leaveData.upcoming.length > 0 ? (
-                          <div className="list-group">
-                            {leaveData.upcoming.map((leave, index) => (
-                              <div key={index} className="list-group-item border-0 d-flex justify-content-between align-items-center py-3">
-                                <div>
-                                  <strong>{leave.type}</strong>
-                                  <div className="text-muted">{leave.date}</div>
-                                </div>
-                                <span className={`badge bg-${leave.status === 'approved' ? 'success' : 'warning'}`}>
-                                  {leave.status}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-muted mb-0">No upcoming leaves scheduled</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Quick Actions */}
-                  <div className="col-lg-6">
-                    <div className="card border-0 shadow-sm h-100">
-                      <div className="card-header bg-white border-0">
-                        <h5 className="mb-0">Quick Actions</h5>
-                      </div>
-                      <div className="card-body">
-                        <div className="row g-3">
-                          <div className="col-md-6">
-                            <button 
-                              className="btn btn-primary w-100 py-3 d-flex flex-column align-items-center rounded-3"
-                              onClick={() => setActiveTab("apply")}
-                            >
-                              <FaPaperPlane size={24} className="mb-2" />
-                              <span>Apply for Leave</span>
-                            </button>
-                          </div>
-                          <div className="col-md-6">
-                            <button 
-                              className="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center rounded-3"
-                              onClick={() => setActiveTab("balance")}
-                            >
-                              <FaBalanceScale size={24} className="mb-2" />
-                              <span>Check Balance</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  ) : (
+                    <p className="text-muted mb-0">No upcoming leaves scheduled</p>
+                  )}
                 </div>
               </div>
-            )}
-
-            {/* Other Tabs */}
-            {activeTab === "apply" && (
-              <div className="card border-0 shadow-sm">
-                <div className="card-body">
-                  <ApplyForLeave user={user} />
-                </div>
-              </div>
-            )}
-
-            {activeTab === "requests" && (
-              <div className="card border-0 shadow-sm">
-                <div className="card-body">
-                  <MyleaveRequest user={user} />
-                </div>
-              </div>
-            )}
-
-            {activeTab === "balance" && (
-              <div className="card border-0 shadow-sm">
-                <div className="card-body">
-                  <LeaveCredit user={user} leaveData={leaveData} />
-                </div>
-              </div>
-            )}
+            </div>
             
-            {activeTab === "settings" && (
-              <div className="row">
-                <div className="col-lg-8">
-                  <div className="card border-0 shadow-sm mb-4">
-                    <div className="card-header bg-white border-0">
-                      <h4 className="mb-0">Profile Information</h4>
+            {/* Quick Actions */}
+            <div className="col-lg-6">
+              <div className="card border-0 shadow-sm h-100">
+                <div className="card-header bg-white border-0">
+                  <h5 className="mb-0">Quick Actions</h5>
+                </div>
+                <div className="card-body">
+                  <div className="row g-3">
+                    <div className="col-md-6">
+                      <button 
+                        className="btn btn-primary w-100 py-3 d-flex flex-column align-items-center rounded-3"
+                        onClick={() => setActiveTab("apply")}
+                      >
+                        <FaPaperPlane size={24} className="mb-2" />
+                        <span>Apply for Leave</span>
+                      </button>
                     </div>
-                    <div className="card-body">
-                      <div className="row mb-3">
-                        <div className="col-md-4">
-                          <label className="form-label">Full Name</label>
-                          <p className="form-control-plaintext">{user?.fullName}</p>
-                        </div>
-                        <div className="col-md-4">
-                          <label className="form-label">Email</label>
-                          <p className="form-control-plaintext">{user?.email}</p>
-                        </div>
-                        <div className="col-md-4">
-                          <label className="form-label">Employee ID</label>
-                          <p className="form-control-plaintext">{user?.employeeId || "N/A"}</p>
-                        </div>
-                      </div>
-                      <button className="btn btn-primary">Edit Profile</button>
-                    </div>
-                  </div>
-                  
-                  <div className="card border-0 shadow-sm">
-                    <div className="card-header bg-white border-0">
-                      <h4 className="mb-0">Security</h4>
-                    </div>
-                    <div className="card-body">
-                      <button className="btn btn-outline-danger">Change Password</button>
+                    <div className="col-md-6">
+                      <button 
+                        className="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center rounded-3"
+                        onClick={() => setActiveTab("balance")}
+                      >
+                        <FaBalanceScale size={24} className="mb-2" />
+                        <span>Check Balance</span>
+                      </button>
                     </div>
                   </div>
                 </div>
               </div>
-            )}
-          </main>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )}
+
+  {/* Other Tabs */}
+  {activeTab === "apply" && (
+    <div className="card border-0 shadow-sm">
+      <div className="card-body">
+        <ApplyForLeave user={user} onApplySuccess={() => fetchLeaveData()} />
+      </div>
+    </div>
+  )}
+
+  {activeTab === "requests" && (
+    <div className="card border-0 shadow-sm">
+      <div className="card-body">
+        <MyleaveRequest user={user} onStatusChange={() => fetchLeaveData()} />
+      </div>
+    </div>
+  )}
+
+  {activeTab === "balance" && (
+    <div className="card border-0 shadow-sm">
+      <div className="card-body">
+        <LeaveCredit user={user} leaveData={leaveData} isLoading={isLoading} />
+      </div>
+    </div>
+  )}
+  
+  {activeTab === "settings" && (
+    <div className="row">
+      <div className="col-lg-8">
+        <div className="card border-0 shadow-sm mb-4">
+          <div className="card-header bg-white border-0">
+            <h4 className="mb-0">Profile Information</h4>
+          </div>
+          <div className="card-body">
+            <div className="row mb-3">
+              <div className="col-md-4">
+                <label className="form-label">Full Name</label>
+                <p className="form-control-plaintext">{user?.fullName}</p>
+              </div>
+              <div className="col-md-4">
+                <label className="form-label">Email</label>
+                <p className="form-control-plaintext">{user?.email}</p>
+              </div>
+              <div className="col-md-4">
+                <label className="form-label">Employee ID</label>
+                <p className="form-control-plaintext">{user?.employeeId || "N/A"}</p>
+              </div>
+            </div>
+            <button className="btn btn-primary">Edit Profile</button>
+          </div>
+        </div>
+        
+        <div className="card border-0 shadow-sm">
+          <div className="card-header bg-white border-0">
+            <h4 className="mb-0">Security</h4>
+          </div>
+          <div className="card-body">
+            <button className="btn btn-outline-danger">Change Password</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
+</main>
         </div>
       </div>
     </div>

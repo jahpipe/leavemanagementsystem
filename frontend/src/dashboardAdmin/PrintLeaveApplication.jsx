@@ -25,22 +25,44 @@ const PrintLeaveApplication = ({ leaveRequest }) => {
   } = leaveDetails;
 
   // List of all leave types
-  const leaveTypes = [
-    "Vacation Leave (Sec. 51, Rule XVI, Omnibus Rules Implementing E.O. No. 292)",
-    "Mandatory/Forced Leave (Sec. 25, Rule XVI, Omnibus Rules Implementing E.O. No. 292)",
-    "Sick Leave (Sec. 43, Rule XVI, Omnibus Rules Implementing E.O. No. 292)",
-    "Maternity Leave (R.A. No. 11210 / IRR issued by CSC, DOLE and SSS)",
-    "Paternity Leave (R.A. No. 8187 / CSC MC No. 71, s. 1998)",
-    "Special Privilege Leave (Sec. 21, Rule XVI, Omnibus Rules Implementing E.O. No. 292)",
-    "Solo Parent Leave (R.A. No. 8972)",
-    "Study Leave (Sec. 68, Rule XVI, Omnibus Rules Implementing E.O. No. 292)",
-    "10-day VAWC Leave (R.A. No. 9262)",
-    "Rehabilitation Privilege (Sec. 55, Rule XVI, Omnibus Rules Implementing E.O. No. 292)",
-    "Special Leave Benefits for Women (R.A. No. 9710)",
-    "Special Emergency (Calamity) Leave (CSC MC No. 2, s. 2012, as amended)",
-    "Adoption Leave (R.A. No. 8552)",
-    "Others: _________________________",
-  ];
+  // Update just the leaveTypes array and checkbox rendering:
+const leaveTypes = [
+  "Vacation Leave (Sec. 51, Rule XVI, Omnibus Rules Implementing E.O. No. 292)",
+  "Mandatory/Forced Leave (Sec. 25, Rule XVI, Omnibus Rules Implementing E.O. No. 292)",
+  "Sick Leave (Sec. 43, Rule XVI, Omnibus Rules Implementing E.O. No. 292)",
+  "Maternity Leave (R.A. No. 11210 / IRR issued by CSC, DOLE and SSS)",
+  "Paternity Leave (R.A. No. 8187 / CSC MC No. 71, s. 1998)",
+  "Special Privilege Leave (Sec. 21, Rule XVI, Omnibus Rules Implementing E.O. No. 292)",
+  "Solo Parent Leave (R.A. No. 8972)",
+  "Study Leave (Sec. 68, Rule XVI, Omnibus Rules Implementing E.O. No. 292)",
+  "10-day VAWC Leave (R.A. No. 9262)",
+  "Rehabilitation Privilege (Sec. 55, Rule XVI, Omnibus Rules Implementing E.O. No. 292)",
+  "Special Leave Benefits for Women (R.A. No. 9710)",
+  "Special Emergency (Calamity) Leave (CSC MC No. 2, s. 2012, as amended)",
+  "Adoption Leave (R.A. No. 8552)",
+  // Modified this line to show custom text if available
+  leaveRequest.other_leave_type 
+    ? `Others: ${leaveRequest.other_leave_type}`
+    : "Others: _________________________",
+];
+
+// Update the checkbox rendering in your 6A section:
+{leaveTypes.map((type, index) => (
+  <p key={index}>
+    <input
+      type="checkbox"
+      className="mr-2"
+      checked={
+        // Modified this logic to properly handle "Others"
+        type.startsWith("Others") 
+          ? leaveRequest.leave_types.includes("Others") || !!leaveRequest.other_leave_type
+          : leaveRequest.leave_types.includes(type.split(" (")[0])
+      }
+      readOnly
+    />{" "}
+    {type}
+  </p>
+))}
   
   return (
     <div className="bg-light p-3" style={{ minHeight: "100vh" }}>
@@ -249,7 +271,7 @@ const PrintLeaveApplication = ({ leaveRequest }) => {
     /> Requested
     <br />
     <br />
-    <p className="small">_________________________________________________________________</p>
+    <p className="small">______________________________________________</p>
     <p className="small text-center">(Signature of Applicant)</p>
   </p>
 </div>
@@ -279,28 +301,40 @@ const PrintLeaveApplication = ({ leaveRequest }) => {
     <tr className="border border-black">
       <td className="border border-black p-2 text-sm">Total Earned</td>
       <td className="border border-black p-2 text-sm text-center">
-        {leaveRequest.vacationLeave?.total_credit || "___"}
+        {leaveRequest.vacationLeave?.total_credit?.toFixed(2) || "0.00"}
       </td>
       <td className="border border-black p-2 text-sm text-center">
-        {leaveRequest.sickLeave?.total_credit || "___"}
+        {leaveRequest.sickLeave?.total_credit?.toFixed(2) || "0.00"}
       </td>
     </tr>
     <tr className="border border-black">
       <td className="border border-black p-2 text-sm">Less this application</td>
       <td className="border border-black p-2 text-sm text-center">
-        {leaveRequest.leave_types.includes("Vacation Leave") ? leaveRequest.leave_dates.length : "0"}
+        {leaveRequest.leave_types.includes("Vacation Leave") ? 
+          Number(leaveRequest.leave_dates.length).toFixed(2) : "0.00"}
       </td>
       <td className="border border-black p-2 text-sm text-center">
-        {leaveRequest.leave_types.includes("Sick Leave") ? leaveRequest.leave_dates.length : "0"}
+        {leaveRequest.leave_types.includes("Sick Leave") ? 
+          Number(leaveRequest.leave_dates.length).toFixed(2) : "0.00"}
       </td>
     </tr>
     <tr className="border border-black">
       <td className="border border-black p-2 text-sm">Balance</td>
       <td className="border border-black p-2 text-sm text-center">
-        {leaveRequest.vacationLeave ? (leaveRequest.vacationLeave.remaining_credit - (leaveRequest.leave_types.includes("Vacation Leave") ? leaveRequest.leave_dates.length : 0)) : "___"}
+        {(() => {
+          const totalCredit = Number(leaveRequest.vacationLeave?.total_credit || 0);
+          const lessApplication = leaveRequest.leave_types.includes("Vacation Leave") ? 
+            Number(leaveRequest.leave_dates.length) : 0;
+          return (totalCredit - lessApplication).toFixed(2);
+        })()}
       </td>
       <td className="border border-black p-2 text-sm text-center">
-        {leaveRequest.sickLeave ? (leaveRequest.sickLeave.remaining_credit - (leaveRequest.leave_types.includes("Sick Leave") ? leaveRequest.leave_dates.length : 0)) : "___"}
+        {(() => {
+          const totalCredit = Number(leaveRequest.sickLeave?.total_credit || 0);
+          const lessApplication = leaveRequest.leave_types.includes("Sick Leave") ? 
+            Number(leaveRequest.leave_dates.length) : 0;
+          return (totalCredit - lessApplication).toFixed(2);
+        })()}
       </td>
     </tr>
   </tbody>

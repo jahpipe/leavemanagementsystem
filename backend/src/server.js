@@ -13,7 +13,9 @@ const leaveapprovalRouter = require('./routes/leaveaporval/leaveaproval');
 const leaveBalanceRoutes = require('./routes/leavebalance/leavebalance')
 const reportsRoutes = require('./routes/reports/reports');
 const adminRoutes = require('./routes/Dashboard/dashboard');
-const empdashboardRoutes = require('./routes/EmpDashboard/empdashboard')
+const employeeRoutes = require('./routes/EmpDashboard/empdashboard'); 
+const leavecardRoutes = require('./routes/leavecard/leavecard')
+const empdashboardRouter = require('./routes/EmpDashboard/empdashboard');
 
 // Middleware
 const app = express();
@@ -48,7 +50,9 @@ app.use('/api/leaveapproval', leaveapprovalRouter);
 app.use("/api", leaveBalanceRoutes);
 app.use("/api/reports", reportsRoutes)
 app.use('/api/admin', adminRoutes); 
-app.use('/api/empdashboard', empdashboardRoutes); 
+app.use('/employee', employeeRoutes);
+app.use('/api/leavecard', leavecardRoutes);
+app.use('/api/empdashboard', empdashboardRouter);
 
 // Start the server
 const PORT = process.env.PORT || 8000;

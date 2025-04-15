@@ -38,29 +38,38 @@ const MyLeaveRequest = () => {
     }
   };
 
-  const deleteLeaveRequest = async (id) => {
+  const cancelLeaveRequest = async (id) => {
     try {
-        const response = await fetch(`http://localhost:8000/api/leave/delete-leave/${id}`, {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-        });
-
-        if (!response.ok) {
-            throw new Error("Failed to delete leave request");
-        }
-
-        alert("Leave request deleted successfully!");
-
-        // ✅ Refresh leave requests after deletion
-        fetchLeaveRequests(userId);
-    } catch (error) {
-        console.error("Error deleting leave request:", error);
-    }
-};
-
-
-
+      const response = await fetch(`http://localhost:8000/api/leave/cancel-leave/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId })
+      });
   
+      const result = await response.json();
+      
+      if (!response.ok) {
+        // Check for specific error messages from backend
+        const errorMsg = result.error || 
+                        result.details?.message || 
+                        "Failed to cancel leave request";
+        throw new Error(errorMsg);
+      }
+  
+      alert(result.message);
+      fetchLeaveRequests(userId); // Refresh the list
+      
+    } catch (error) {
+      console.error("Cancellation error:", error);
+      
+      // Show detailed error in development, generic in production
+      const errorMsg = process.env.NODE_ENV === 'development' 
+        ? `${error.message}\n\n${error.stack}`
+        : error.message;
+      
+      alert(`Error: ${errorMsg}`);
+    }
+  };
 
   const filteredRequests = leaveRequests.filter((request) =>
     filter === "All" ? true : request.status === filter
@@ -140,14 +149,14 @@ const MyLeaveRequest = () => {
                       )}
                       {filter === "Pending" && (
                         <td>
-                            <button
-                                className="btn btn-danger btn-sm"
-                                onClick={() => deleteLeaveRequest(request.id)}
-                            >
-                                Delete
-                            </button>
+                          <button
+                            className="btn btn-warning btn-sm"
+                            onClick={() => cancelLeaveRequest(request.id)}
+                          >
+                            Cancel
+                          </button>
                         </td>
-                    )}
+                      )}
                     </tr>
                   ))
                 )}

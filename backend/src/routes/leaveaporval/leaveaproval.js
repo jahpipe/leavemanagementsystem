@@ -23,46 +23,82 @@ router.get("/:status", async (req, res) => {
     }
 
     const query = `
-      SELECT 
-        la.id, 
-        la.user_id, 
-        la.leave_details, 
-        la.other_leave_type, 
-        la.status, 
-        la.rejection_message, 
-        la.created_at, 
-        u.fullName, 
-        u.lastName, 
-        u.middleName,
-        u.position,
-        u.salary,
-        u.school_assignment,
-        GROUP_CONCAT(DISTINCT lt.name) AS leave_types, 
-        GROUP_CONCAT(DISTINCT DATE_FORMAT(ld.leave_date, '%Y-%m-%d')) AS leave_dates
-      FROM leave_applications la
-      LEFT JOIN users u ON la.user_id = u.id
-      LEFT JOIN leave_application_types lat ON la.id = lat.leave_application_id
-      LEFT JOIN leave_types lt ON lat.leave_type_id = lt.id
-      LEFT JOIN leave_dates ld ON la.id = ld.leave_application_id
-      WHERE la.status = ?
-      GROUP BY la.id
-      ORDER BY la.created_at DESC
-      LIMIT ? OFFSET ?`;
+  SELECT 
+    la.id, 
+    la.user_id, 
+    la.leave_details, 
+    la.other_leave_type, 
+    la.status, 
+    la.rejection_message, 
+    la.created_at, 
+    u.fullName, 
+    u.lastName, 
+    u.middleName,
+    u.position,
+    u.salary,
+    u.school_assignment,
+    GROUP_CONCAT(DISTINCT lt.name) AS leave_types, 
+    GROUP_CONCAT(DISTINCT DATE_FORMAT(ld.leave_date, '%Y-%m-%d')) AS leave_dates,
+    -- Add subqueries for leave balances
+    (
+      SELECT JSON_OBJECT(
+        'total_credit', elb.total_credit,
+        'used_credit', elb.used_credit,
+        'remaining_credit', elb.remaining_credit
+      )
+      FROM employee_leave_balances elb
+      JOIN leave_types lt2 ON elb.leave_type_id = lt2.id
+      WHERE elb.user_id = la.user_id AND lt2.name = 'Vacation Leave'
+    ) as vacation_leave_balance,
+    (
+      SELECT JSON_OBJECT(
+        'total_credit', elb.total_credit,
+        'used_credit', elb.used_credit,
+        'remaining_credit', elb.remaining_credit
+      )
+      FROM employee_leave_balances elb
+      JOIN leave_types lt2 ON elb.leave_type_id = lt2.id
+      WHERE elb.user_id = la.user_id AND lt2.name = 'Sick Leave'
+    ) as sick_leave_balance
+  FROM leave_applications la
+  LEFT JOIN users u ON la.user_id = u.id
+  LEFT JOIN leave_application_types lat ON la.id = lat.leave_application_id
+  LEFT JOIN leave_types lt ON lat.leave_type_id = lt.id
+  LEFT JOIN leave_dates ld ON la.id = ld.leave_application_id
+  WHERE la.status = ?
+  GROUP BY la.id
+  ORDER BY la.created_at DESC
+  LIMIT ? OFFSET ?`;
 
-    const [results] = await db.execute(query, [status, limit, offset]);
+      const [results] = await db.execute(query, [status, limit, offset]);
 
-    const formattedResults = results.map(row => {
-      const types = row.leave_types ? row.leave_types.split(",") : [];
-      if (row.other_leave_type) {
-        types.push(row.other_leave_type);
-      }
-      return {
-        ...row,
-        leave_types: types,
-        leave_dates: row.leave_dates ? row.leave_dates.split(",") : [],
-        rejection_message: row.rejection_message || ""
-      };
-    });
+      // In your GET /api/leaveapproval/:status route, update the formattedResults mapping:
+      const formattedResults = results.map(row => {
+        // Parse leave balances
+        let vacationLeave = null;
+        let sickLeave = null;
+        
+        try {
+          if (row.vacation_leave_balance) {
+            vacationLeave = JSON.parse(row.vacation_leave_balance);
+          }
+          if (row.sick_leave_balance) {
+            sickLeave = JSON.parse(row.sick_leave_balance);
+          }
+        } catch (error) {
+          console.error('Error parsing leave balances:', error);
+        }
+
+        return {
+          ...row,
+          leave_types: row.leave_types ? row.leave_types.split(",") : [],
+          leave_dates: row.leave_dates ? row.leave_dates.split(",") : [],
+          rejection_message: row.rejection_message || "",
+          other_leave_type: row.other_leave_type || null,
+          vacationLeave,
+          sickLeave
+        };
+      });
 
     res.json(formattedResults);
   } catch (error) {
@@ -159,5 +195,6 @@ router.get("/leave-balances/:userId", async (req, res) => {
     if (connection) connection.release();
   }
 });
+
 
 module.exports = router;

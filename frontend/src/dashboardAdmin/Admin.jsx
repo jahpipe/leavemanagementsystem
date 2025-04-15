@@ -269,7 +269,7 @@ const Admin = () => {
                       <FaExclamationTriangle className="me-3 fs-4" />
                       <div>
                         <strong>{dashboardData.stats.lowBalanceAlerts} employees</strong> have less than 2 days of leave remaining.
-                        <a href="/manage-balance" className="alert-link ms-2">Review now</a>
+   
                       </div>
                     </div>
                     {dashboardData.lowBalanceDetails.length > 0 && (

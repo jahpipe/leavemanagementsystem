@@ -24,7 +24,8 @@ const LeaveApplicationForm = () => {
     otherLeaveType: "",
     location: "",
     abroadDetails: "",
-    illnessDetails: "",
+    illnessType: "", // Added separate field for illness type
+    illnessDetails: "", // Added separate field for illness details
     studyLeave: "",
     monetization: "",
     commutation: "",
@@ -35,9 +36,8 @@ const LeaveApplicationForm = () => {
     terminalLeave: false,
   });
 
-  const [userId, setUserId] = useState(null); // State to store the logged-in user's ID
+  const [userId, setUserId] = useState(null);
 
-  // Retrieve userId from localStorage on component mount
   useEffect(() => {
     const loggedInUser = JSON.parse(localStorage.getItem("user"));
     if (loggedInUser?.id) {
@@ -55,17 +55,35 @@ const LeaveApplicationForm = () => {
             ? [...prev.leaveType, value]
             : prev.leaveType.filter((item) => item !== value);
 
-          if (value === "Sick Leave" && checked) {
-            prev.illnessDetails = "In Hospital";
-          }
-          if (value === "Vacation Leave" && checked) {
-            prev.location = "Within the Philippines";
-          }
-          if (value === "Study Leave" && checked) {
-            prev.studyLeave = "Completion of Master's Degree";
+          // Clear related fields when leave type is unchecked
+          let newState = { ...prev, leaveType: updatedLeaveType };
+          
+          if (!checked) {
+            if (value === "Vacation Leave" || value === "Special Privilege Leave") {
+              newState.location = "";
+              newState.abroadDetails = "";
+            }
+            if (value === "Sick Leave") {
+              newState.illnessType = "";
+              newState.illnessDetails = "";
+            }
+            if (value === "Study Leave") {
+              newState.studyLeave = "";
+            }
+          } else {
+            // Set default values when leave type is checked
+            if (value === "Sick Leave") {
+              newState.illnessType = "In Hospital";
+            }
+            if (value === "Vacation Leave" || value === "Special Privilege Leave") {
+              newState.location = "Within the Philippines";
+            }
+            if (value === "Study Leave") {
+              newState.studyLeave = "Completion of Master's Degree";
+            }
           }
 
-          return { ...prev, leaveType: updatedLeaveType };
+          return newState;
         }
         return { ...prev, [name]: checked };
       }
@@ -92,7 +110,6 @@ const LeaveApplicationForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation checks
     if (formData.leaveType.length === 0) {
       alert("Please select at least one leave type.");
       return;
@@ -108,13 +125,29 @@ const LeaveApplicationForm = () => {
       return;
     }
 
-    // Check if userId is available
     if (!userId) {
       alert("User not logged in. Please log in to submit a leave application.");
       return;
     }
 
-    // Convert leave types to their corresponding IDs
+    // Validate dependent fields
+    if ((formData.leaveType.includes("Vacation Leave") || 
+         formData.leaveType.includes("Special Privilege Leave")) && 
+        !formData.location) {
+      alert("Please specify location for Vacation/Special Privilege Leave.");
+      return;
+    }
+
+    if (formData.leaveType.includes("Sick Leave") && (!formData.illnessType || !formData.illnessDetails)) {
+      alert("Please specify illness details for Sick Leave.");
+      return;
+    }
+
+    if (formData.leaveType.includes("Study Leave") && !formData.studyLeave) {
+      alert("Please specify study leave details.");
+      return;
+    }
+
     const leaveTypes = formData.leaveType.map((type) => LEAVE_TYPE_IDS[type]);
 
     const payload = {
@@ -124,14 +157,16 @@ const LeaveApplicationForm = () => {
       leave_details: JSON.stringify({
         location: formData.location || null,
         abroadDetails: formData.abroadDetails || null,
+        illnessType: formData.illnessType || null,
         illnessDetails: formData.illnessDetails || null,
-        studyLeave: formData.studyLeave || null, // Send the actual value
+        studyLeave: formData.studyLeave || null,
       }),
       number_of_days: formData.numberOfDays,
       location: formData.location || null,
       abroad_details: formData.abroadDetails || null,
+      illness_type: formData.illnessType || null,
       illness_details: formData.illnessDetails || null,
-      study_leave: formData.studyLeave || null, // Send the actual value
+      study_leave: formData.studyLeave || null,
       monetization: formData.monetization || null,
       commutation: formData.commutation || null,
       status: "Pending",
@@ -151,13 +186,12 @@ const LeaveApplicationForm = () => {
 
       if (response.ok) {
         alert("Leave application submitted successfully!");
-
-        // Reset the form to its initial state
         setFormData({
           leaveType: [],
           otherLeaveType: "",
           location: "",
           abroadDetails: "",
+          illnessType: "",
           illnessDetails: "",
           studyLeave: "",
           monetization: "",
@@ -178,13 +212,15 @@ const LeaveApplicationForm = () => {
     }
   };
 
+  // Helper function to check if a leave type is selected
+  const isLeaveTypeSelected = (type) => formData.leaveType.includes(type);
+
   return (
     <div className="container py-4" style={{ overflow: "auto", maxHeight: "90vh", boxSizing: "border-box" }}>
       <div className="bg-white p-4 rounded shadow-lg" style={{ boxSizing: "border-box" }}>
         <h2 className="fw-bold mb-4 text-primary text-center border-bottom pb-2">6. DETAILS OF APPLICATION</h2>
 
         <form onSubmit={handleSubmit}>
-          {/* Flexbox Container for Side-by-Side Sections */}
           <div className="d-flex gap-3">
             {/* 6.A TYPE OF LEAVE TO BE AVAILED OF */}
             <div className="flex-grow-1 p-3 border rounded bg-light">
@@ -237,6 +273,7 @@ const LeaveApplicationForm = () => {
                     name="otherLeaveType"
                     value={formData.otherLeaveType}
                     onChange={handleChange}
+                    disabled={!formData.leaveType.includes("Other")}
                   />
                 </div>
               </div>
@@ -258,8 +295,9 @@ const LeaveApplicationForm = () => {
                     value="Within the Philippines"
                     onChange={handleChange}
                     checked={formData.location === "Within the Philippines"}
+                    disabled={!isLeaveTypeSelected("Vacation Leave") && !isLeaveTypeSelected("Special Privilege Leave")}
                   />
-                  <label className="form-check-label" htmlFor="vacation-ph">
+                  <label className={`form-check-label ${!isLeaveTypeSelected("Vacation Leave") && !isLeaveTypeSelected("Special Privilege Leave") ? "text-muted" : ""}`} htmlFor="vacation-ph">
                     Within the Philippines
                   </label>
                 </div>
@@ -272,21 +310,26 @@ const LeaveApplicationForm = () => {
                     value="Abroad"
                     onChange={handleChange}
                     checked={formData.location === "Abroad"}
+                    disabled={!isLeaveTypeSelected("Vacation Leave") && !isLeaveTypeSelected("Special Privilege Leave")}
                   />
-                  <label className="form-check-label" htmlFor="vacation-abroad">
+                  <label className={`form-check-label ${!isLeaveTypeSelected("Vacation Leave") && !isLeaveTypeSelected("Special Privilege Leave") ? "text-muted" : ""}`} htmlFor="vacation-abroad">
                     Abroad (Specify)
                   </label>
-                  <input
-                    type="text"
-                    className="form-control form-control-sm mt-2"
-                    name="abroadDetails"
-                    value={formData.abroadDetails}
-                    onChange={handleChange}
-                  />
+                  {formData.location === "Abroad" && (
+                    <input
+                      type="text"
+                      className="form-control form-control-sm mt-2"
+                      name="abroadDetails"
+                      value={formData.abroadDetails}
+                      onChange={handleChange}
+                      placeholder="Specify location abroad"
+                      disabled={!isLeaveTypeSelected("Vacation Leave") && !isLeaveTypeSelected("Special Privilege Leave")}
+                    />
+                  )}
                 </div>
               </div>
 
-              {/* Sick Leave Section */}
+              {/* Sick Leave Section - UPDATED */}
               <div className="mb-3">
                 <label className="fw-semibold">In case of Sick Leave:</label>
                 <div className="form-check">
@@ -294,43 +337,42 @@ const LeaveApplicationForm = () => {
                     className="form-check-input"
                     type="radio"
                     id="sick-hospital"
-                    name="illnessDetails"
+                    name="illnessType"
                     value="In Hospital"
                     onChange={handleChange}
-                    checked={formData.illnessDetails === "In Hospital"}
+                    checked={formData.illnessType === "In Hospital"}
+                    disabled={!isLeaveTypeSelected("Sick Leave")}
                   />
-                  <label className="form-check-label" htmlFor="sick-hospital">
+                  <label className={`form-check-label ${!isLeaveTypeSelected("Sick Leave") ? "text-muted" : ""}`} htmlFor="sick-hospital">
                     In Hospital (Specify Illness)
                   </label>
-                  <input
-                    type="text"
-                    className="form-control form-control-sm mt-2"
-                    name="illnessDetails"
-                    value={formData.illnessDetails}
-                    onChange={handleChange}
-                  />
                 </div>
                 <div className="form-check">
                   <input
                     className="form-check-input"
                     type="radio"
                     id="sick-outpatient"
-                    name="illnessDetails"
+                    name="illnessType"
                     value="Out Patient"
                     onChange={handleChange}
-                    checked={formData.illnessDetails === "Out Patient"}
+                    checked={formData.illnessType === "Out Patient"}
+                    disabled={!isLeaveTypeSelected("Sick Leave")}
                   />
-                  <label className="form-check-label" htmlFor="sick-outpatient">
+                  <label className={`form-check-label ${!isLeaveTypeSelected("Sick Leave") ? "text-muted" : ""}`} htmlFor="sick-outpatient">
                     Out Patient (Specify Illness)
                   </label>
+                </div>
+                {(formData.illnessType === "In Hospital" || formData.illnessType === "Out Patient") && (
                   <input
                     type="text"
                     className="form-control form-control-sm mt-2"
                     name="illnessDetails"
                     value={formData.illnessDetails}
                     onChange={handleChange}
+                    placeholder="Specify illness details"
+                    disabled={!isLeaveTypeSelected("Sick Leave")}
                   />
-                </div>
+                )}
               </div>
 
               {/* Study Leave Section */}
@@ -345,8 +387,9 @@ const LeaveApplicationForm = () => {
                     value="Completion of Master's Degree"
                     onChange={handleChange}
                     checked={formData.studyLeave === "Completion of Master's Degree"}
+                    disabled={!isLeaveTypeSelected("Study Leave")}
                   />
-                  <label className="form-check-label" htmlFor="masters-degree">
+                  <label className={`form-check-label ${!isLeaveTypeSelected("Study Leave") ? "text-muted" : ""}`} htmlFor="masters-degree">
                     Completion of Master's Degree
                   </label>
                 </div>
@@ -359,8 +402,9 @@ const LeaveApplicationForm = () => {
                     value="BAR/Board Examination Review"
                     onChange={handleChange}
                     checked={formData.studyLeave === "BAR/Board Examination Review"}
+                    disabled={!isLeaveTypeSelected("Study Leave")}
                   />
-                  <label className="form-check-label" htmlFor="bar-exam">
+                  <label className={`form-check-label ${!isLeaveTypeSelected("Study Leave") ? "text-muted" : ""}`} htmlFor="bar-exam">
                     BAR/Board Examination Review
                   </label>
                 </div>
@@ -373,18 +417,23 @@ const LeaveApplicationForm = () => {
                     value="Other purpose"
                     onChange={handleChange}
                     checked={formData.studyLeave === "Other purpose"}
+                    disabled={!isLeaveTypeSelected("Study Leave")}
                   />
-                  <label className="form-check-label" htmlFor="other-purpose">
+                  <label className={`form-check-label ${!isLeaveTypeSelected("Study Leave") ? "text-muted" : ""}`} htmlFor="other-purpose">
                     Other purpose
                   </label>
+                </div>
+                {formData.studyLeave === "Other purpose" && (
                   <input
                     type="text"
                     className="form-control form-control-sm mt-2"
                     name="studyLeave"
                     value={formData.studyLeave}
                     onChange={handleChange}
+                    placeholder="Specify purpose"
+                    disabled={!isLeaveTypeSelected("Study Leave")}
                   />
-                </div>
+                )}
               </div>
 
               {/* Monetization of Leave Credits */}
@@ -425,7 +474,6 @@ const LeaveApplicationForm = () => {
             </div>
           </div>
 
-          {/* Flexbox Container for Side-by-Side Sections */}
           <div className="d-flex gap-3 mt-4">
             {/* 6.C NUMBER OF WORKING DAYS APPLIED FOR */}
             <div className="flex-grow-1 p-3 border rounded bg-light">
@@ -484,14 +532,14 @@ const LeaveApplicationForm = () => {
                   <label className="form-check-label" htmlFor="commutation-requested">
                     Requested
                   </label>
-                  <div className="text-center mt-4">
-                    <button type="submit" className="btn btn-primary btn-lg w-100">
-                      Submit
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>
+          </div>
+          <div className="text-center mt-4">
+            <button type="submit" className="btn btn-primary btn-lg w-100">
+              Submit
+            </button>
           </div>
         </form>
       </div>
