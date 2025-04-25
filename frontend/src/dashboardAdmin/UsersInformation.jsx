@@ -42,7 +42,7 @@ const UsersInformation = ({ user }) => {
            nature.includes('teaching');
   }, [user]);
 
-  // Process leave transactions
+  // Process leave transactions - now creates separate entries for each day
   const processLeaveTransactions = useCallback((balances) => {
     if (!balances || !balances.length) return [];
     
@@ -53,141 +53,146 @@ const UsersInformation = ({ user }) => {
       const transactions = [];
   
       // Initial balance
-      if (balance.recorded_date) {
-        transactions.push({
-          id: `initial-${balance.id}`,
-          date: balance.recorded_date,
-          type: 'INITIAL',
-          creditChange: totalCredit,
-          description: 'Initial leave credit',
-          recordedBy: balance.recorded_by || 'System',
-          leaveType
-        });
-      }
+      transactions.push({
+        id: `initial-${balance.id}`,
+        date: balance.recorded_date,
+        type: 'INITIAL',
+        creditChange: totalCredit,
+        description: 'Initial leave credit',
+        recordedBy: balance.recorded_by || 'System',
+        leaveType,
+        isBalanceDisplay: false // Mark this as not a balance display
+      });
   
-      // Add deductions if any
+      // Add deductions as separate entries for each day
       if (usedCredit > 0) {
-        transactions.push({
-          id: `used-${balance.id}`,
-          date: balance.last_used_date || balance.recorded_date,
-          type: 'DEDUCTION',
-          creditChange: -usedCredit,
-          description: `Leave used (${usedCredit} days)`,
-          recordedBy: balance.recorded_by || 'System',
-          leaveType
-        });
+        // If you have actual leave application dates, use them here
+        // For now, we'll create separate entries for each day
+        for (let i = 0; i < usedCredit; i++) {
+          transactions.push({
+            id: `used-${balance.id}-${i}`,
+            date: balance.last_used_date || balance.recorded_date,
+            type: 'DEDUCTION',
+            creditChange: -1, // Each entry is 1 day
+            description: `Leave used (1 day)`,
+            recordedBy: balance.recorded_by || 'System',
+            leaveType,
+            isBalanceDisplay: false
+          });
+        }
       }
   
       // Current balance
       transactions.push({
-        id: `current-${balance.id}`,
-        date: new Date().toISOString(),
+        id: `balance-${balance.id}`,
+        date: new Date().toISOString(), // Or use the last transaction date
         type: 'BALANCE',
-        creditChange: balance.remaining_credit - totalCredit,
+        creditChange: 0, // Doesn't affect the balance
         description: 'Current balance',
         recordedBy: 'System',
-        leaveType
+        leaveType,
+        isBalanceDisplay: true // Mark this as a balance display
       });
   
       return transactions;
     });
   }, []);
 
-  // Calculate running balance
+  // Calculate running balance for each transaction
   const calculateRunningBalance = useCallback((transactions) => {
     const balancesByType = {};
+    const result = [];
     
-    return transactions.map(transaction => {
+    transactions.forEach(transaction => {
       const leaveType = transaction.leaveType;
       
       if (!balancesByType[leaveType]) {
         balancesByType[leaveType] = 0;
       }
       
-      const creditChange = Number(transaction.creditChange) || 0;
-      balancesByType[leaveType] += creditChange;
+      // Only update balance for actual transactions, not balance displays
+      if (!transaction.isBalanceDisplay) {
+        const creditChange = Number(transaction.creditChange) || 0;
+        balancesByType[leaveType] += creditChange;
+      }
       
-      return {
+      result.push({
         ...transaction,
         balanceAfter: balancesByType[leaveType],
         formattedDate: formatDate(transaction.date),
         formattedCreditChange: formatCredit(transaction.creditChange),
         formattedBalance: formatCredit(balancesByType[leaveType])
-      };
+      });
     });
+    
+    return result;
   }, []);
 
-  // Process non-teaching leave transactions
-  // Update the getNonTeachingLeaveTransactions function
-// Update the getNonTeachingLeaveTransactions function
-const getNonTeachingLeaveTransactions = useCallback((transactions) => {
-  if (!transactions?.length) return [];
+  // Process non-teaching leave transactions with separate entries
+  const getNonTeachingLeaveTransactions = useCallback((transactions) => {
+    if (!transactions?.length) return [];
 
-  const balances = {
-    'Vacation Leave': { balance: 0 },
-    'Sick Leave': { balance: 0 }
-  };
+    const balances = {
+      'Vacation Leave': { balance: 0 },
+      'Sick Leave': { balance: 0 }
+    };
 
-  // Process each transaction individually, no grouping
-  return transactions
-    .filter(t => t.type === 'INITIAL' || t.type === 'ACCRUAL' || t.type === 'DEDUCTION')
-    .sort((a, b) => {
-      // First sort by date
-      const dateCompare = new Date(a.date) - new Date(b.date);
-      if (dateCompare !== 0) return dateCompare;
-      
-      // If same date, preserve original order using ID
-      return Number(a.id) - Number(b.id);
-    })
-    .map(t => {
-      const isVacation = t.leaveType === 'Vacation Leave';
-      const creditAmount = Number(t.creditChange) || 0;
-      const isDeduction = t.type === 'DEDUCTION';
+    // Process each transaction individually
+    return transactions
+      .filter(t => t.type === 'INITIAL' || t.type === 'ACCRUAL' || t.type === 'DEDUCTION')
+      .sort((a, b) => {
+        // First sort by date
+        const dateCompare = new Date(a.date) - new Date(b.date);
+        if (dateCompare !== 0) return dateCompare;
+        
+        // If same date, preserve original order using sequence number
+        return (a.sequence || 0) - (b.sequence || 0);
+      })
+      .map(t => {
+        const isVacation = t.leaveType === 'Vacation Leave';
+        const creditAmount = Number(t.creditChange) || 0;
+        const isDeduction = t.type === 'DEDUCTION';
 
-      // Create individual entry for each transaction
-      const entry = {
-        id: t.id,
-        date: t.date,
-        formattedDate: formatDate(t.date),
-        type: t.type,
-        description: t.description || (isDeduction ? 'Leave used' : 'Initial leave credit'),
-        recordedBy: t.recordedBy || 'System',
-        vacation: {
-          // Show exact credit amount without combining
-          earned: isVacation && !isDeduction ? creditAmount : 0,
-          used: isVacation && isDeduction ? Math.abs(creditAmount) : 0,
-          balance: balances['Vacation Leave'].balance,
-          formattedBalance: ''
-        },
-        sick: {
-          // Show exact credit amount without combining
-          earned: !isVacation && !isDeduction ? creditAmount : 0,
-          used: !isVacation && isDeduction ? Math.abs(creditAmount) : 0,
-          balance: balances['Sick Leave'].balance,
-          formattedBalance: ''
+        // Create individual entry for each transaction
+        const entry = {
+          id: t.id,
+          date: t.date,
+          formattedDate: formatDate(t.date),
+          type: t.type,
+          description: t.description || (isDeduction ? 'Leave used' : 'Initial leave credit'),
+          recordedBy: t.recordedBy || 'System',
+          vacation: {
+            earned: isVacation && !isDeduction ? creditAmount : 0,
+            used: isVacation && isDeduction ? Math.abs(creditAmount) : 0,
+            balance: balances['Vacation Leave'].balance,
+            formattedBalance: formatCredit(balances['Vacation Leave'].balance)
+          },
+          sick: {
+            earned: !isVacation && !isDeduction ? creditAmount : 0,
+            used: !isVacation && isDeduction ? Math.abs(creditAmount) : 0,
+            balance: balances['Sick Leave'].balance,
+            formattedBalance: formatCredit(balances['Sick Leave'].balance)
+          }
+        };
+
+        // Update running balances
+        if (isVacation) {
+          balances['Vacation Leave'].balance += isDeduction ? -Math.abs(creditAmount) : creditAmount;
+          entry.vacation.balance = balances['Vacation Leave'].balance;
+          entry.vacation.formattedBalance = formatCredit(entry.vacation.balance);
+        } else {
+          balances['Sick Leave'].balance += isDeduction ? -Math.abs(creditAmount) : creditAmount;
+          entry.sick.balance = balances['Sick Leave'].balance;
+          entry.sick.formattedBalance = formatCredit(entry.sick.balance);
         }
-      };
 
-      // Update running balances
-      if (isVacation) {
-        balances['Vacation Leave'].balance += isDeduction ? -Math.abs(creditAmount) : creditAmount;
-        entry.vacation.balance = balances['Vacation Leave'].balance;
-        entry.vacation.formattedBalance = formatCredit(entry.vacation.balance);
-      } else {
-        balances['Sick Leave'].balance += isDeduction ? -Math.abs(creditAmount) : creditAmount;
-        entry.sick.balance = balances['Sick Leave'].balance;
-        entry.sick.formattedBalance = formatCredit(entry.sick.balance);
-      }
-
-      return entry;
-    });
-}, []);
-
+        return entry;
+      });
+  }, []);
 
   // Initialize data
   useEffect(() => {
     if (!user) return;
-
     setIsTeachingStaff(checkTeachingStatus());
   }, [user, checkTeachingStatus]);
 
@@ -282,7 +287,7 @@ const getNonTeachingLeaveTransactions = useCallback((transactions) => {
                 {isTeachingStaff ? "TEACHER'S RECORD CARD" : "EMPLOYEE RECORD CARD"}
               </p>
             </div>
-
+            
             <div className="table table-bordered mb-4 border border-dark">
               <div className="row">
                 <div className="col-2 fw-bold border border-dark">Name:</div>
@@ -352,6 +357,7 @@ const getNonTeachingLeaveTransactions = useCallback((transactions) => {
               <h6 className="text-center">Schools Division of Baybay City</h6>
               <h4 className="text-center fw-bold">TEACHER'S LEAVE CARD</h4>
 
+
               <table className="table table-bordered mt-4">
                 <tbody>
                   <tr>
@@ -396,7 +402,7 @@ const getNonTeachingLeaveTransactions = useCallback((transactions) => {
                     </thead>
                     <tbody>
                       {transactions.map((transaction) => (
-                        <tr key={transaction.id}>
+                        <tr key={`${transaction.id}-${transaction.sequence}`}>
                           <td>
                             {transaction.formattedDate}
                             <small className="text-muted d-block">
@@ -432,61 +438,59 @@ const getNonTeachingLeaveTransactions = useCallback((transactions) => {
           </div>
         )}
 
-        {/* Non-Teaching Leave Card Tab */}
-        {/* Non-Teaching Leave Card Tab */}
+    
 {activeTab === "nonTeachingLeave" && !isTeachingStaff && (
-  <div className="w-100">
-    <div className="container mt-4">
-      <h5 className="text-center fw-bold">Department of Education</h5>
-      <h6 className="text-center">Schools Division of Baybay City</h6>
-      <h4 className="text-center fw-bold">EMPLOYEE'S LEAVE CARD</h4>
+          <div className="w-100">
+            <div className="container mt-4">
+              <h5 className="text-center fw-bold">Department of Education</h5>
+              <h6 className="text-center">Schools Division of Baybay City</h6>
+              <h4 className="text-center fw-bold">EMPLOYEE'S LEAVE CARD</h4>
 
-      <table className="table table-bordered text-center mt-4">
-        <thead>
-          <tr>
-            <th rowSpan="2">PERIOD</th>
-            <th rowSpan="2">PARTICULARS</th>
-            <th colSpan="3">VACATION LEAVE</th>
-            <th colSpan="3">SICK LEAVE</th>
-            <th rowSpan="2">RECORDED BY</th>
-          </tr>
-          <tr>
-            <th>Earned</th>
-            <th>Used</th>
-            <th>Balance</th>
-            <th>Earned</th>
-            <th>Used</th>
-            <th>Balance</th>
-          </tr>
-        </thead>
-        {/* In the non-teaching leave card table body */}
-        <tbody>
-  {nonTeachingTransactions.map((transaction, index) => (
-    <tr key={index}>
-      <td>{transaction.formattedDate}</td>
-      <td className="text-start">
-        {transaction.description}
-        {transaction.type !== 'BALANCE' && (
-          <small className="text-muted d-block">
-            {transaction.type === 'INITIAL' ? 'Initial credit' : 
-             transaction.type === 'ACCRUAL' ? 'Monthly accrual' : 'Deduction'}
-          </small>
+              <table className="table table-bordered text-center mt-4">
+                <thead>
+                  <tr>
+                    <th rowSpan="2">PERIOD</th>
+                    <th rowSpan="2">PARTICULARS</th>
+                    <th colSpan="3">VACATION LEAVE</th>
+                    <th colSpan="3">SICK LEAVE</th>
+                    <th rowSpan="2">RECORDED BY</th>
+                  </tr>
+                  <tr>
+                    <th>Earned</th>
+                    <th>Used</th>
+                    <th>Balance</th>
+                    <th>Earned</th>
+                    <th>Used</th>
+                    <th>Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {nonTeachingTransactions.map((transaction) => (
+                    <tr key={transaction.id}>
+                      <td>{transaction.formattedDate}</td>
+                      <td className="text-start">
+                        {transaction.description}
+                        {transaction.type !== 'BALANCE' && (
+                          <small className="text-muted d-block">
+                            {transaction.type === 'INITIAL' ? 'Initial credit' : 
+                             transaction.type === 'ACCRUAL' ? 'Monthly accrual' : 'Deduction'}
+                          </small>
+                        )}
+                      </td>
+                      <td>{transaction.vacation.earned > 0 ? formatCredit(transaction.vacation.earned) : ''}</td>
+                      <td>{transaction.vacation.used > 0 ? formatCredit(transaction.vacation.used) : ''}</td>
+                      <td>{transaction.vacation.formattedBalance}</td>
+                      <td>{transaction.sick.earned > 0 ? formatCredit(transaction.sick.earned) : ''}</td>
+                      <td>{transaction.sick.used > 0 ? formatCredit(transaction.sick.used) : ''}</td>
+                      <td>{transaction.sick.formattedBalance}</td>
+                      <td>{transaction.recordedBy}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
-      </td>
-      <td>{transaction.vacation.earned > 0 ? formatCredit(transaction.vacation.earned) : ''}</td>
-      <td>{transaction.vacation.used > 0 ? formatCredit(transaction.vacation.used) : ''}</td>
-      <td>{transaction.vacation.formattedBalance}</td>
-      <td>{transaction.sick.earned > 0 ? formatCredit(transaction.sick.earned) : ''}</td>
-      <td>{transaction.sick.used > 0 ? formatCredit(transaction.sick.used) : ''}</td>
-      <td>{transaction.sick.formattedBalance}</td>
-      <td>{transaction.recordedBy}</td>
-    </tr>
-  ))}
-</tbody>
-      </table>
-    </div>
-  </div>
-)}
       </div>
     </div>
   );

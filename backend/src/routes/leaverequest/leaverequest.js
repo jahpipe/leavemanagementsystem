@@ -40,16 +40,13 @@ router.post("/apply-leave", async (req, res) => {
         // Validate required fields
         if (!user_id || !Array.isArray(leave_types) || leave_types.length === 0 || 
             !Array.isArray(leave_dates) || leave_dates.length === 0) {
+            await connection.rollback();
             connection.release();
             return res.status(400).json({ error: "Required fields are missing" });
         }
 
-        // Calculate working days (excluding weekends)
-        const workingDays = leave_dates.filter(dateStr => {
-            const date = new Date(dateStr);
-            const day = date.getDay();
-            return day !== 0 && day !== 6; // Not Sunday or Saturday
-        }).length;
+        // Calculate working days (1 date = 1 day)
+        const workingDays = leave_dates.length;
 
         // Check leave balances but DON'T deduct yet
         const [balances] = await connection.query(
@@ -67,6 +64,7 @@ router.post("/apply-leave", async (req, res) => {
         // Validate balances
         for (const leaveTypeId of leave_types) {
             if (!balanceMap[leaveTypeId] || balanceMap[leaveTypeId] < workingDays) {
+                await connection.rollback();
                 connection.release();
                 return res.status(400).json({
                     error: `Insufficient leave balance for leave type: ${leaveTypeId}`,
@@ -77,10 +75,12 @@ router.post("/apply-leave", async (req, res) => {
             }
         }
 
-        // Insert leave application with Pending status
+        // Insert ONE leave application with Pending status
         const [result] = await connection.execute(
             `INSERT INTO leave_applications 
-            (user_id, other_leave_type, leave_details, number_of_days, location, abroad_details, illness_details, study_leave, monetization, commutation, status, created_at) 
+            (user_id, other_leave_type, leave_details, number_of_days, location, 
+             abroad_details, illness_details, study_leave, monetization, 
+             commutation, status, created_at) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
             [
                 user_id, 
@@ -99,19 +99,23 @@ router.post("/apply-leave", async (req, res) => {
 
         const leave_application_id = result.insertId;
 
-        // Insert leave types
-        const leaveTypeValues = leave_types.map(lt => [leave_application_id, lt]);
-        await connection.query(
-            `INSERT INTO leave_application_types (leave_application_id, leave_type_id) VALUES ?`,
-            [leaveTypeValues]
-        );
+        // Insert leave types (one record per type)
+        if (leave_types.length > 0) {
+            await connection.query(
+                `INSERT INTO leave_application_types (leave_application_id, leave_type_id) 
+                 VALUES ?`,
+                [leave_types.map(lt => [leave_application_id, lt])]
+            );
+        }
 
-        // Insert leave dates
-        const leaveDateValues = leave_dates.map(date => [leave_application_id, date]);
-        await connection.query(
-            `INSERT INTO leave_dates (leave_application_id, leave_date) VALUES ?`,
-            [leaveDateValues]
-        );
+        // Insert leave dates (one record per date)
+        if (leave_dates.length > 0) {
+            await connection.query(
+                `INSERT INTO leave_dates (leave_application_id, leave_date) 
+                 VALUES ?`,
+                [leave_dates.map(date => [leave_application_id, date])]
+            );
+        }
 
         await connection.commit();
         connection.release();
@@ -164,27 +168,28 @@ router.post("/approve-leave/:id", async (req, res) => {
         }
 
         if (action === 'approve') {
-            // Deduct balances only when approved
-            for (const leaveTypeId of application.leave_types) {
-                await connection.query(
-                    `UPDATE employee_leave_balances 
-                     SET used_credit = used_credit + ?, 
-                         remaining_credit = remaining_credit - ? 
-                     WHERE user_id = ? AND leave_type_id = ?`,
-                    [application.number_of_days, application.number_of_days, 
-                     application.user_id, leaveTypeId]
-                );
+            // Check if leave types are valid (optional)
+            if (application.leave_types.includes('Sick Leave') && application.leave_types.includes('Vacation Leave')) {
+                await connection.rollback();
+                connection.release();
+                return res.status(400).json({ error: "Cannot apply both Sick Leave and Vacation Leave in the same application" });
             }
-
+        
+            // Deduct from the first leave type (or implement custom logic)
+            const leaveTypeToDeduct = application.leave_types[0];
+            
+            await connection.query(
+                `UPDATE employee_leave_balances 
+                 SET used_credit = used_credit + ?, 
+                     remaining_credit = remaining_credit - ? 
+                 WHERE user_id = ? AND leave_type_id = ?`,
+                [application.number_of_days, application.number_of_days, 
+                 application.user_id, leaveTypeToDeduct]
+            );
+        
             // Update status to Approved
             await connection.query(
                 `UPDATE leave_applications SET status = 'Approved' WHERE id = ?`,
-                [id]
-            );
-        } else if (action === 'reject') {
-            // Just update status to Rejected (no balance changes)
-            await connection.query(
-                `UPDATE leave_applications SET status = 'Rejected' WHERE id = ?`,
                 [id]
             );
         }
@@ -205,12 +210,15 @@ router.post("/approve-leave/:id", async (req, res) => {
 
 router.get("/leave-applications", async (req, res) => {
     try {
-        console.log("Fetching all leave applications...");
-
         const query = `
             SELECT 
                 la.id,
                 la.user_id,
+                u.fullName,
+                u.lastName,
+                u.middleName,
+                u.position,
+                u.salary,
                 la.location,
                 la.abroad_details,
                 la.illness_details,
@@ -221,46 +229,105 @@ router.get("/leave-applications", async (req, res) => {
                 la.created_at,
                 la.rejection_message,
                 u.school_assignment,
-                GROUP_CONCAT(DISTINCT DATE_FORMAT(ld.leave_date, '%M %d, %Y')) AS leave_dates,
-                GROUP_CONCAT(DISTINCT lt.name ORDER BY lt.name ASC) AS leave_types
+                la.number_of_days,
+                (
+                    SELECT GROUP_CONCAT(DISTINCT DATE_FORMAT(ld.leave_date, '%M %d, %Y') ORDER BY ld.leave_date ASC SEPARATOR ', ')
+                    FROM leave_dates ld 
+                    WHERE ld.leave_application_id = la.id
+                ) AS leave_dates,
+                (
+                    SELECT GROUP_CONCAT(DISTINCT lt.name ORDER BY lt.name ASC SEPARATOR ', ')
+                    FROM leave_application_types lat
+                    JOIN leave_types lt ON lat.leave_type_id = lt.id
+                    WHERE lat.leave_application_id = la.id
+                ) AS leave_types,
+                -- Get Historical Vacation Leave balance
+                (
+                    SELECT JSON_OBJECT(
+                        'total_credit', COALESCE(
+                            (SELECT SUM(credit_amount)
+                             FROM leave_accrual_history lah
+                             WHERE lah.user_id = la.user_id 
+                             AND lah.leave_type_id = 1
+                             AND lah.recorded_at <= la.created_at), 0),
+                        'used_credit', COALESCE(
+                            (SELECT SUM(number_of_days)
+                             FROM leave_applications la2
+                             JOIN leave_application_types lat2 ON la2.id = lat2.leave_application_id
+                             WHERE la2.user_id = la.user_id 
+                             AND lat2.leave_type_id = 1
+                             AND la2.status = 'Approved'
+                             AND la2.created_at < la.created_at), 0),
+                        'remaining_credit', COALESCE(
+                            (SELECT SUM(credit_amount)
+                             FROM leave_accrual_history lah
+                             WHERE lah.user_id = la.user_id 
+                             AND lah.leave_type_id = 1
+                             AND lah.recorded_at <= la.created_at), 0) -
+                            COALESCE(
+                            (SELECT SUM(number_of_days)
+                             FROM leave_applications la2
+                             JOIN leave_application_types lat2 ON la2.id = lat2.leave_application_id
+                             WHERE la2.user_id = la.user_id 
+                             AND lat2.leave_type_id = 1
+                             AND la2.status = 'Approved'
+                             AND la2.created_at < la.created_at), 0)
+                    )
+                ) AS vacationLeave,
+                -- Get Historical Sick Leave balance
+                (
+                    SELECT JSON_OBJECT(
+                        'total_credit', COALESCE(
+                            (SELECT SUM(credit_amount)
+                             FROM leave_accrual_history lah
+                             WHERE lah.user_id = la.user_id 
+                             AND lah.leave_type_id = 3
+                             AND lah.recorded_at <= la.created_at), 0),
+                        'used_credit', COALESCE(
+                            (SELECT SUM(number_of_days)
+                             FROM leave_applications la2
+                             JOIN leave_application_types lat2 ON la2.id = lat2.leave_application_id
+                             WHERE la2.user_id = la.user_id 
+                             AND lat2.leave_type_id = 3
+                             AND la2.status = 'Approved'
+                             AND la2.created_at < la.created_at), 0),
+                        'remaining_credit', COALESCE(
+                            (SELECT SUM(credit_amount)
+                             FROM leave_accrual_history lah
+                             WHERE lah.user_id = la.user_id 
+                             AND lah.leave_type_id = 3
+                             AND lah.recorded_at <= la.created_at), 0) -
+                            COALESCE(
+                            (SELECT SUM(number_of_days)
+                             FROM leave_applications la2
+                             JOIN leave_application_types lat2 ON la2.id = lat2.leave_application_id
+                             WHERE la2.user_id = la.user_id 
+                             AND lat2.leave_type_id = 3
+                             AND la2.status = 'Approved'
+                             AND la2.created_at < la.created_at), 0)
+                    )
+                ) AS sickLeave
             FROM leave_applications la
-            LEFT JOIN leave_dates ld ON la.id = ld.leave_application_id
-            LEFT JOIN leave_application_types lat ON la.id = lat.leave_application_id
-            LEFT JOIN leave_types lt ON lat.leave_type_id = lt.id
-            LEFT JOIN users u ON la.user_id = u.id
-            GROUP BY la.id, u.school_assignment
+            JOIN users u ON la.user_id = u.id
             ORDER BY la.created_at DESC
         `;
 
+
         const [results] = await db.execute(query);
+        
+        // Parse JSON strings into objects
+        const processedResults = results.map(result => ({
+            ...result,
+            vacationLeave: JSON.parse(result.vacationLeave || '{"total_credit":0,"used_credit":0,"remaining_credit":0}'),
+            sickLeave: JSON.parse(result.sickLeave || '{"total_credit":0,"used_credit":0,"remaining_credit":0}'),
+            leave_dates: result.leave_dates ? result.leave_dates.split(', ') : []
+        }));
 
-        console.log("Fetched leave applications:", results.length);
-
-        results.forEach((application, index) => {
-            console.log(`Leave Application #${index + 1}:`, {
-                id: application.id,
-                user_id: application.user_id,
-                location: application.location,
-                abroad_details: application.abroad_details,
-                illness_details: application.illness_details,
-                study_leave: application.study_leave,
-                monetization: application.monetization,
-                commutation: application.commutation,
-                status: application.status,
-                created_at: application.created_at,
-                rejection_message: application.rejection_message,
-                school_assignment: application.school_assignment,  
-                leave_dates: application.leave_dates,
-                leave_types: application.leave_types,
-            });
-        });
-
-        res.json(results);
+        res.json(processedResults);
     } catch (error) {
         console.error("Error fetching leave applications:", error);
         res.status(500).json({ error: "Internal server error" });
     }
 });
-
 
 module.exports = router;
