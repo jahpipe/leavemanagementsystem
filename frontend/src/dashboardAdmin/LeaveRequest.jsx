@@ -37,28 +37,33 @@ const LeaveRequestApproval = () => {
     let rejection_message = "";
   
     if (status === "Rejected") {
-      rejection_message = prompt("Please enter a reason for rejecting this request:");
-      if (!rejection_message) return;
+        rejection_message = prompt("Please enter a reason for rejecting this request:");
+        if (!rejection_message) return;
     }
   
     try {
-      const response = await fetch(`http://localhost:8000/api/leaveapproval/${id}/update`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: status.toLowerCase(), rejection_message }), // Using correct field name
-      });
-  
-      if (response.ok) {
-        setLeaveRequests(leaveRequests.filter((request) => request.id !== id));
-        alert(`Leave request ${status.toLowerCase()} successfully!`);
-      } else {
-        alert("Failed to update leave request.");
-      }
+        const response = await fetch(`http://localhost:8000/api/leaveapproval/${id}/update`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                status: status.toLowerCase(), 
+                rejection_message 
+            }),
+        });
+    
+        if (response.ok) {
+            // Refresh the list or remove the approved/rejected item
+            setLeaveRequests(prev => prev.filter(req => req.id !== id));
+            alert(`Leave request ${status.toLowerCase()} successfully!`);
+        } else {
+            const errorData = await response.json();
+            alert(`Error: ${errorData.error}`);
+        }
     } catch (error) {
-      console.error("Error updating leave request:", error);
-      alert("An error occurred while updating the request.");
+        console.error("Error updating leave request:", error);
+        alert("An error occurred while updating the request.");
     }
-  };
+};
   
 
   const handleSendMessage = async (id) => {

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 11, 2025 at 08:42 AM
+-- Generation Time: Apr 22, 2025 at 09:30 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -39,23 +39,13 @@ CREATE TABLE `employee_leave_balances` (
   `used_hours` decimal(7,2) DEFAULT 0.00,
   `remaining_credit` decimal(10,2) DEFAULT NULL,
   `period` date DEFAULT NULL,
-  `recorded_by` int(11) NOT NULL,
+  `recorded_by` int(11) DEFAULT NULL,
   `recorded_date` timestamp NOT NULL DEFAULT current_timestamp(),
   `absences_with_pay` int(11) DEFAULT 0,
   `last_application_date` date DEFAULT NULL,
   `last_accrual_date` date DEFAULT NULL,
   `particulars` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `employee_leave_balances`
---
-
-INSERT INTO `employee_leave_balances` (`id`, `user_id`, `leave_type_id`, `accrual_start_date`, `monthly_credit`, `credit_to_hours_ratio`, `total_credit`, `used_credit`, `used_hours`, `remaining_credit`, `period`, `recorded_by`, `recorded_date`, `absences_with_pay`, `last_application_date`, `last_accrual_date`, `particulars`) VALUES
-(20, 78, 1, '2025-04-08', 1.25, 8.00, 2.50, 3, 0.00, 0.50, NULL, 0, '2025-04-08 02:59:39', 0, NULL, '2025-04-08', NULL),
-(21, 78, 3, '2025-04-10', 1.25, 8.00, 22.50, 2, 0.00, 21.50, NULL, 0, '2025-04-10 08:22:17', 0, NULL, '2025-04-11', NULL),
-(22, 76, 3, '2025-04-10', 1.25, 8.00, 12.00, 0, 0.00, 12.00, NULL, 0, '2025-04-10 08:36:30', 0, NULL, NULL, NULL),
-(26, 79, 3, '2025-04-11', 0.00, 8.00, 1.25, 0, 0.00, 1.25, NULL, 79, '2025-04-11 06:36:23', 0, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -74,26 +64,6 @@ CREATE TABLE `leave_accrual_history` (
   `notes` text DEFAULT NULL,
   `is_manual` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `leave_accrual_history`
---
-
-INSERT INTO `leave_accrual_history` (`id`, `user_id`, `leave_type_id`, `accrual_date`, `credit_amount`, `recorded_at`, `recorded_by`, `notes`, `is_manual`) VALUES
-(36, 78, 1, '2025-04-08 10:59:39', 1.25, '2025-04-08 02:59:39', 0, NULL, 0),
-(37, 78, 1, '2025-04-08 10:59:54', 1.25, '2025-04-08 02:59:54', 0, NULL, 0),
-(38, 78, 3, '2025-04-10 16:22:17', 4.00, '2025-04-10 08:22:17', 0, NULL, 0),
-(39, 76, 3, '2025-04-10 16:36:30', 12.00, '2025-04-10 08:36:30', 0, NULL, 0),
-(40, 78, 3, '2025-04-10 16:45:13', 2.00, '2025-04-10 08:45:13', 0, NULL, 0),
-(41, 78, 3, '2025-04-11 08:42:48', 4.00, '2025-04-11 00:42:48', 0, NULL, 0),
-(42, 78, 3, '2025-04-11 08:43:09', 1.25, '2025-04-11 00:43:09', 0, NULL, 0),
-(43, 78, 3, '2025-04-11 08:43:26', 1.25, '2025-04-11 00:43:26', 0, NULL, 0),
-(44, 78, 3, '2025-04-11 08:43:35', 1.25, '2025-04-11 00:43:35', 0, NULL, 0),
-(45, 78, 3, '2025-04-11 08:43:59', 5.00, '2025-04-11 00:43:59', 0, NULL, 0),
-(46, 78, 3, '2025-04-11 09:18:52', 1.25, '2025-04-11 01:18:52', 0, NULL, 0),
-(47, 78, 3, '2025-04-11 09:57:58', 1.25, '2025-04-11 01:57:58', 0, NULL, 0),
-(48, 78, 3, '2025-04-11 10:01:47', 1.25, '2025-04-11 02:01:47', 0, '#nothingimposiblesdsd', 0),
-(49, 79, 3, '2025-04-11 14:36:23', 1.25, '2025-04-11 06:36:23', 0, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -118,15 +88,6 @@ CREATE TABLE `leave_applications` (
   `rejection_message` text DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `leave_applications`
---
-
-INSERT INTO `leave_applications` (`id`, `user_id`, `other_leave_type`, `leave_details`, `number_of_days`, `location`, `abroad_details`, `illness_details`, `study_leave`, `monetization`, `commutation`, `status`, `created_at`, `rejection_message`, `updated_at`) VALUES
-(127, 78, NULL, '{\"location\":\"Abroad\",\"abroadDetails\":\"shabshara mindano\",\"illnessType\":null,\"illnessDetails\":null,\"studyLeave\":null}', 1, 'Abroad', 'shabshara mindano', NULL, NULL, NULL, 0, 'Rejected', '2025-04-08 03:01:41', 'LOW LEAVE BALANCE', NULL),
-(128, 78, NULL, '{\"location\":\"Within the Philippines\",\"abroadDetails\":null,\"illnessType\":null,\"illnessDetails\":null,\"studyLeave\":null}', 1, '', NULL, NULL, NULL, NULL, 0, 'Approved', '2025-04-08 03:03:11', '', NULL),
-(129, 78, NULL, '{\"location\":null,\"abroadDetails\":null,\"illnessType\":\"In Hospital\",\"illnessDetails\":\"home visit\",\"studyLeave\":null}', 1, NULL, NULL, 'home visit', NULL, NULL, 0, 'Approved', '2025-04-11 05:28:55', '', NULL);
 
 --
 -- Triggers `leave_applications`
@@ -157,14 +118,28 @@ CREATE TABLE `leave_application_types` (
   `leave_type_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `leave_application_types`
---
+-- --------------------------------------------------------
 
-INSERT INTO `leave_application_types` (`id`, `leave_application_id`, `leave_type_id`) VALUES
-(9, 127, 1),
-(10, 128, 1),
-(11, 129, 3);
+--
+-- Stand-in structure for view `leave_card_view`
+-- (See below for the actual view)
+--
+CREATE TABLE `leave_card_view` (
+`employee_id` int(11)
+,`name` varchar(302)
+,`assignment` varchar(255)
+,`first_day_service` date
+,`leave_application_id` int(11)
+,`leave_type` varchar(255)
+,`period` timestamp
+,`particulars` text
+,`earned` int(11)
+,`status` enum('Pending','Approved','Rejected')
+,`recorded_date` timestamp
+,`total_earned` decimal(10,2)
+,`abs_und_wp` int(11)
+,`balance` decimal(10,2)
+);
 
 -- --------------------------------------------------------
 
@@ -177,15 +152,6 @@ CREATE TABLE `leave_dates` (
   `leave_application_id` int(11) NOT NULL,
   `leave_date` date NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `leave_dates`
---
-
-INSERT INTO `leave_dates` (`id`, `leave_application_id`, `leave_date`) VALUES
-(9, 127, '2025-05-07'),
-(10, 128, '2025-05-07'),
-(11, 129, '2025-05-27');
 
 -- --------------------------------------------------------
 
@@ -255,7 +221,8 @@ INSERT INTO `users` (`id`, `fullName`, `lastName`, `contact`, `username`, `passw
 (1, 'moreno', 'moreno', '123123', 'moreno', '$2b$10$Fva8QRB8iUURYGn3yfQzaexSoA3vg1uK0pJusjyN3jv/8ELeiQlCW', 'admin', 'A', 'ADMINISTRETOR', 0.00, 'zone 2', '2018-03-27', 'BOYHANG', 'KIJU#8', 'PERMANENT', '2025-03-27', 'ORIGINAL', 'USA', NULL, 'offline'),
 (76, 'hesodgeees', 'EBORDA', '123123', 'hesodgee', '$2b$10$y3V36AUyJHg73R5W0ew1quOH5Q1QhfYDbcBmiMzT2zEEu9yRt3w3.', 'employee', 'A', 'ITO', 233321.00, 'HIPUSNGO BAYBAY LEYTE', '2016-07-12', 'HIPUSNGO', 'KS#50w2', 'PERMANENT', '2025-04-04', 'ORIGINAL', 'USA', '[{\"date_changed\":\"2025-04-07T05:26:08.935Z\",\"effective_date\":\"2025-04-05\",\"position\":\"Assistant Schools Division Superintendent\",\"salary\":\"233321.00\",\"status_of_employment\":\"PERMANENT\",\"special_order_no\":\"KS#50w2\",\"nature_of_appointment\":\"ORIGINAL\",\"school_assignment\":\"USA\"},{\"date_changed\":\"2025-04-07T05:27:51.466Z\",\"effective_date\":\"2025-04-04\",\"position\":\"TEACHER I\",\"salary\":\"233321.00\",\"status_of_employment\":\"PERMANENT\",\"special_order_no\":\"KS#50w2\",\"nature_of_appointment\":\"ORIGINAL\",\"school_assignment\":\"USA\"}]', 'offline'),
 (78, 'john', 'DOE', '123123', 'johndoe', '$2b$10$ZiqXOWT64Qft2sHctIlyCOFCXfDvhIb4X/ta8gY.obOKPNT9igvs2', 'employee', 'D', 'TEACHER I', 12313132.00, 'SABSHARA MINDANO', '1998-12-28', 'MANDAMANDA', 'KS#50w2', 'PERMANENT', '2025-04-08', 'ORIGINAL', 'POMPONAN HIGH SCHOOL', NULL, 'offline'),
-(79, 'angelo', 'tabinas', '7812738', 'angelo', '$2b$10$RB1LuLRRa2XBJKoRNy9y1.R4aJ4pNu1v8h//rGL6KAgjiE4p6xx2G', 'employee', 'B', 'TEACHER I', 234444.00, 'LEYTE', '1999-07-07', 'PUNONG BEACH', 'KS#50w2', 'PERMANENT', '2025-04-11', 'ORIGINAL', 'POMPONAN HIGH SCHOOL', NULL, 'offline');
+(79, 'angelo', 'tabinas', '7812738', 'angelo', '$2b$10$RB1LuLRRa2XBJKoRNy9y1.R4aJ4pNu1v8h//rGL6KAgjiE4p6xx2G', 'employee', 'B', 'TEACHER I', 234444.00, 'LEYTE', '1999-07-07', 'PUNONG BEACH', 'KS#50w2', 'PERMANENT', '2025-04-11', 'ORIGINAL', 'POMPONAN HIGH SCHOOL', NULL, 'offline'),
+(80, 'friends', 'friends', '123131', 'friends', '$2b$10$RFDt98tPun89xUJP9ghh5O2.KS1F3ju637whAMXKGit/WkFsjKp7y', 'employee', 'f', 'Superintendent', 1231312.00, 'BAYBAY', '1998-06-09', 'KAN-ASI', 'KS#50w2', 'PERMANENT', '2025-04-22', 'ORIGINAL', 'DIVISION OFFICE', NULL, 'offline');
 
 -- --------------------------------------------------------
 
@@ -293,6 +260,15 @@ CREATE TABLE `users_temp` (
 INSERT INTO `users_temp` (`id`, `fullName`, `lastName`, `contact`, `username`, `password`, `role`, `middleName`, `position`, `salary`, `place_of_birth`, `date_of_birth`, `permanent_address`, `special_order_no`, `status_of_employment`, `effective_date`, `nature_of_appointment`, `school_assignment`, `employment_history`, `status`) VALUES
 (1, 'moreno', 'moreno', '123123', 'moreno', '$2b$10$Fva8QRB8iUURYGn3yfQzaexSoA3vg1uK0pJusjyN3jv/8ELeiQlCW', 'admin', 'A', 'ADMINISTRETOR', 0.00, 'zone 2', '2018-03-27', 'BOYHANG', 'KIJU#8', 'PERMANENT', '2025-03-27', 'ORIGINAL', 'USA', NULL, 'offline'),
 (2, 'lorabell', 'lorabell', 'lorabell', 'lorabell', '$2b$10$vJI4TS.0Ufs6L57hHT0d7efVJ9OhzEslmwwQWrH7KGg8JI5DPAUNm', 'employee', 'lorabell', 'TEACHER I', 1333333.00, 'lorabell', '2025-04-06', 'ZONE 15', 'KS#50w2', 'PERMANENT', '2025-04-04', 'ORIGINAL', 'PADRE BURGOS', NULL, 'offline');
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `leave_card_view`
+--
+DROP TABLE IF EXISTS `leave_card_view`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `leave_card_view`  AS SELECT `u`.`id` AS `employee_id`, concat(`u`.`fullName`,' ',`u`.`middleName`,' ',`u`.`lastName`) AS `name`, `u`.`school_assignment` AS `assignment`, `u`.`effective_date` AS `first_day_service`, `la`.`id` AS `leave_application_id`, `lt`.`name` AS `leave_type`, `la`.`created_at` AS `period`, `la`.`leave_details` AS `particulars`, `la`.`number_of_days` AS `earned`, `la`.`status` AS `status`, `la`.`created_at` AS `recorded_date`, `elb`.`total_credit` AS `total_earned`, `elb`.`used_credit` AS `abs_und_wp`, `elb`.`remaining_credit` AS `balance` FROM ((((`users` `u` left join `leave_applications` `la` on(`u`.`id` = `la`.`user_id`)) left join `leave_application_types` `lat` on(`la`.`id` = `lat`.`leave_application_id`)) left join `leave_types` `lt` on(`lat`.`leave_type_id` = `lt`.`id`)) left join `employee_leave_balances` `elb` on(`u`.`id` = `elb`.`user_id` and `lt`.`id` = `elb`.`leave_type_id`)) ;
 
 --
 -- Indexes for dumped tables
@@ -366,31 +342,31 @@ ALTER TABLE `users_temp`
 -- AUTO_INCREMENT for table `employee_leave_balances`
 --
 ALTER TABLE `employee_leave_balances`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `leave_accrual_history`
 --
 ALTER TABLE `leave_accrual_history`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `leave_applications`
 --
 ALTER TABLE `leave_applications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=130;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=136;
 
 --
 -- AUTO_INCREMENT for table `leave_application_types`
 --
 ALTER TABLE `leave_application_types`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `leave_dates`
 --
 ALTER TABLE `leave_dates`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `leave_types`
@@ -402,7 +378,7 @@ ALTER TABLE `leave_types`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=80;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=81;
 
 --
 -- AUTO_INCREMENT for table `users_temp`
@@ -419,7 +395,6 @@ ALTER TABLE `users_temp`
 --
 ALTER TABLE `employee_leave_balances`
   ADD CONSTRAINT `fk_leave_type` FOREIGN KEY (`leave_type_id`) REFERENCES `leave_types` (`id`),
-  ADD CONSTRAINT `fk_recorded_by` FOREIGN KEY (`recorded_by`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 
 --

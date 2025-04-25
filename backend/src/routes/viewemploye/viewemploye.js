@@ -123,114 +123,126 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get leave card for a specific user
-// Get leave card for a specific user with accrual history
-router.get('/:id/leave-card', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    // Get user information including teaching status
-    const [userInfo] = await db.execute(`
-      SELECT 
-        u.id, 
-        CONCAT(u.fullName, ' ', u.lastName) as fullName,
-        u.school_assignment,
-        u.effective_date,
-        u.position,
-        u.nature_of_appointment,
-        CASE 
-          WHEN LOWER(u.position) LIKE '%teacher%' 
-            OR LOWER(u.position) LIKE '%faculty%'
-            OR LOWER(u.nature_of_appointment) LIKE '%teaching%'
-          THEN true 
-          ELSE false 
-        END as isTeaching
-      FROM users u 
-      WHERE u.id = ?
-    `, [id]);
-
-    if (!userInfo.length) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Get all leave transactions (accruals + deductions)
-    const [transactions] = await db.execute(`
-      -- Get accruals from leave_accrual_history
-      SELECT 
-        lah.id,
-        lah.accrual_date as date,
-        lah.credit_amount,
-        lah.recorded_at,
-        lah.notes,
-        lt.name as leave_type,
-        COALESCE(u.fullName, 'System') as recorded_by,
-        'ACCRUAL' as transaction_type
-      FROM leave_accrual_history lah
-      JOIN leave_types lt ON lah.leave_type_id = lt.id
-      LEFT JOIN users u ON lah.recorded_by = u.id
-      WHERE lah.user_id = ?
+  // Get leave card for a specific user
+  // Get leave card for a specific user with accrual history
+  router.get('/:id/leave-card', async (req, res) => {
+    try {
+      const { id } = req.params;
       
-      UNION ALL
-      
-      -- Get deductions from leave_applications
-      SELECT 
-        la.id,
-        la.created_at as date,
-        -1 * la.number_of_days as credit_amount,
-        la.created_at as recorded_at,
-        CONCAT('Leave application: ', la.status) as notes,
-        lt.name as leave_type,
-        COALESCE(u.fullName, 'System') as recorded_by,
-        'DEDUCTION' as transaction_type
-      FROM leave_applications la
-      JOIN leave_application_types lat ON la.id = lat.leave_application_id
-      JOIN leave_types lt ON lat.leave_type_id = lt.id
-      LEFT JOIN users u ON la.user_id = u.id
-      WHERE la.user_id = ? AND la.status = 'approved'
-      
-      ORDER BY date DESC
-    `, [id, id]);
+      // Get user information including teaching status
+      const [userInfo] = await db.execute(`
+        SELECT 
+          u.id, 
+          CONCAT(u.fullName, ' ', u.lastName) as fullName,
+          u.school_assignment,
+          u.effective_date,
+          u.position,
+          u.nature_of_appointment,
+          CASE 
+            WHEN LOWER(u.position) LIKE '%teacher%' 
+              OR LOWER(u.position) LIKE '%faculty%'
+              OR LOWER(u.nature_of_appointment) LIKE '%teaching%'
+            THEN true 
+            ELSE false 
+          END as isTeaching
+        FROM users u 
+        WHERE u.id = ?
+      `, [id]);
 
-    // Get current balances
-    const [balances] = await db.execute(`
-      SELECT 
-        lt.name as leave_type,
-        elb.total_credit,
-        elb.used_credit,
-        elb.remaining_credit
-      FROM employee_leave_balances elb
-      JOIN leave_types lt ON elb.leave_type_id = lt.id
-      WHERE elb.user_id = ?
-    `, [id]);
-
-    res.json({
-      success: true,
-      data: {
-        userInfo: {
-          ...userInfo[0],
-          firstDayOfService: userInfo[0].effective_date,
-          isTeaching: userInfo[0].isTeaching
-        },
-        transactions: transactions.map(t => ({
-          ...t,
-          date: formatDate(t.date),
-          recorded_at: formatDate(t.recorded_at),
-          description: t.notes || t.transaction_type,
-          creditChange: t.credit_amount,
-          leaveType: t.leave_type
-        })),
-        balances
+      if (!userInfo.length) {
+        return res.status(404).json({ message: 'User not found' });
       }
-    });
-  } catch (err) {
-    console.error('Error fetching leave card:', err);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to fetch leave card',
-      error: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
-  }
-});
+
+      // Get all leave transactions (accruals + deductions)
+      // In the router.get('/:id/leave-card') route, modify the transactions query:
+
+      const [transactions] = await db.execute(`
+        -- Get initial credits
+        SELECT 
+          lah.id,
+          lah.accrual_date as date,
+          lah.credit_amount as credit_amount,
+          lah.recorded_at as recorded_at,
+          COALESCE(lah.notes, 'Monthly accrual') as notes,
+          lt.name as leave_type,
+          COALESCE(u.fullName, 'System') as recorded_by,
+          'ACCRUAL' as transaction_type
+        FROM leave_accrual_history lah
+        JOIN leave_types lt ON lah.leave_type_id = lt.id
+        LEFT JOIN users u ON lah.recorded_by = u.id
+        WHERE lah.user_id = ?
+        
+        UNION ALL
+        
+        -- Get initial balances
+        SELECT 
+          NULL as id,
+          elb.recorded_date as date,
+          elb.total_credit as credit_amount,
+          elb.recorded_date as recorded_at,
+          'Initial credit' as notes,
+          lt.name as leave_type,
+          'System' as recorded_by,
+          'INITIAL' as transaction_type
+        FROM employee_leave_balances elb
+        JOIN leave_types lt ON elb.leave_type_id = lt.id
+        WHERE elb.user_id = ?
+        
+        UNION ALL
+        
+        -- Get deductions remains the same...
+        
+        ORDER BY date ASC
+      `, [id, id]);
+
+      // Get current balances
+      const [balances] = await db.execute(`
+        SELECT 
+          lt.name as leave_type,
+          elb.total_credit,
+          elb.used_credit,
+          elb.remaining_credit,
+          COALESCE(SUM(lah.credit_amount), 0) as earned_credits
+        FROM employee_leave_balances elb
+        JOIN leave_types lt ON elb.leave_type_id = lt.id
+        LEFT JOIN leave_accrual_history lah ON elb.leave_type_id = lah.leave_type_id 
+          AND elb.user_id = lah.user_id
+        WHERE elb.user_id = ?
+        GROUP BY lt.name, elb.total_credit, elb.used_credit, elb.remaining_credit
+      `, [id]);
+
+      res.json({
+        success: true,
+        data: {
+          userInfo: {
+            ...userInfo[0],
+            firstDayOfService: userInfo[0].effective_date,
+            isTeaching: userInfo[0].isTeaching
+          },
+          transactions: transactions.map(t => ({
+            ...t,
+            date: formatDate(t.date),
+            recorded_at: formatDate(t.recorded_at),
+            description: t.notes || t.transaction_type,
+            creditChange: t.credit_amount,
+            leaveType: t.leave_type,
+            isEarned: t.transaction_type === 'INITIAL' || t.transaction_type === 'ACCRUAL'
+          })),
+          balances: balances.map(b => ({
+            ...b,
+            earned_credits: Number(b.earned_credits) + Number(b.total_credit) // Include initial credits
+          }))
+        }
+      });
+    } catch (err) {
+      console.error('Error fetching leave card:', err);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to fetch leave card',
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+      });
+    }
+  });
 
 // Register new employee with default leave balances
 router.post('/', async (req, res) => {

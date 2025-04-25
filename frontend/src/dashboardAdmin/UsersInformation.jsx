@@ -118,53 +118,71 @@ const UsersInformation = ({ user }) => {
   }, []);
 
   // Process non-teaching leave transactions
-  const getNonTeachingLeaveTransactions = useCallback((transactions) => {
-    // Initialize running balances
-    const balances = {
-      vacation: 0,
-      sick: 0
-    };
-  
-    // Sort transactions by date
-    const sortedTransactions = [...transactions].sort((a, b) => 
-      new Date(a.date) - new Date(b.date)
-    );
-  
-    // Group transactions by date first
-    const groupedByDate = sortedTransactions.reduce((acc, t) => {
-      const date = t.date;
-      const isVacation = t.leaveType.toLowerCase().includes('vacation');
-      const type = isVacation ? 'vacation' : 'sick';
+  // Update the getNonTeachingLeaveTransactions function
+// Update the getNonTeachingLeaveTransactions function
+const getNonTeachingLeaveTransactions = useCallback((transactions) => {
+  if (!transactions?.length) return [];
+
+  const balances = {
+    'Vacation Leave': { balance: 0 },
+    'Sick Leave': { balance: 0 }
+  };
+
+  // Process each transaction individually, no grouping
+  return transactions
+    .filter(t => t.type === 'INITIAL' || t.type === 'ACCRUAL' || t.type === 'DEDUCTION')
+    .sort((a, b) => {
+      // First sort by date
+      const dateCompare = new Date(a.date) - new Date(b.date);
+      if (dateCompare !== 0) return dateCompare;
       
-      if (!acc[date]) {
-        acc[date] = {
-          date,
-          formattedDate: formatDate(date),
-          vacation: null,
-          sick: null,
-          recordedBy: t.recordedBy,
-          description: t.description
-        };
-      }
-  
-      // Update running balance
-      balances[type] += Number(t.creditChange) || 0;
-      
-      // Store transaction data
-      acc[date][type] = {
-        creditChange: t.creditChange,
-        balanceAfter: balances[type],
-        formattedCreditChange: formatCredit(t.creditChange),
-        formattedBalance: formatCredit(balances[type])
+      // If same date, preserve original order using ID
+      return Number(a.id) - Number(b.id);
+    })
+    .map(t => {
+      const isVacation = t.leaveType === 'Vacation Leave';
+      const creditAmount = Number(t.creditChange) || 0;
+      const isDeduction = t.type === 'DEDUCTION';
+
+      // Create individual entry for each transaction
+      const entry = {
+        id: t.id,
+        date: t.date,
+        formattedDate: formatDate(t.date),
+        type: t.type,
+        description: t.description || (isDeduction ? 'Leave used' : 'Initial leave credit'),
+        recordedBy: t.recordedBy || 'System',
+        vacation: {
+          // Show exact credit amount without combining
+          earned: isVacation && !isDeduction ? creditAmount : 0,
+          used: isVacation && isDeduction ? Math.abs(creditAmount) : 0,
+          balance: balances['Vacation Leave'].balance,
+          formattedBalance: ''
+        },
+        sick: {
+          // Show exact credit amount without combining
+          earned: !isVacation && !isDeduction ? creditAmount : 0,
+          used: !isVacation && isDeduction ? Math.abs(creditAmount) : 0,
+          balance: balances['Sick Leave'].balance,
+          formattedBalance: ''
+        }
       };
-  
-      return acc;
-    }, {});
-  
-    // Convert to array and sort by date (newest first)
-    return Object.values(groupedByDate)
-      .sort((a, b) => new Date(b.date) - new Date(a.date));
-  }, []);
+
+      // Update running balances
+      if (isVacation) {
+        balances['Vacation Leave'].balance += isDeduction ? -Math.abs(creditAmount) : creditAmount;
+        entry.vacation.balance = balances['Vacation Leave'].balance;
+        entry.vacation.formattedBalance = formatCredit(entry.vacation.balance);
+      } else {
+        balances['Sick Leave'].balance += isDeduction ? -Math.abs(creditAmount) : creditAmount;
+        entry.sick.balance = balances['Sick Leave'].balance;
+        entry.sick.formattedBalance = formatCredit(entry.sick.balance);
+      }
+
+      return entry;
+    });
+}, []);
+
 
   // Initialize data
   useEffect(() => {
@@ -441,21 +459,30 @@ const UsersInformation = ({ user }) => {
             <th>Balance</th>
           </tr>
         </thead>
+        {/* In the non-teaching leave card table body */}
         <tbody>
-          {nonTeachingTransactions.map((transaction, index) => (
-            <tr key={index}>
-              <td>{transaction.formattedDate}</td>
-              <td className="text-start">{transaction.description}</td>
-              <td>{transaction.vacation?.creditChange > 0 ? transaction.vacation.formattedCreditChange : ''}</td>
-              <td>{transaction.vacation?.creditChange < 0 ? Math.abs(transaction.vacation.creditChange).toFixed(2) : ''}</td>
-              <td>{transaction.vacation?.formattedBalance || '0.00'}</td>
-              <td>{transaction.sick?.creditChange > 0 ? transaction.sick.formattedCreditChange : ''}</td>
-              <td>{transaction.sick?.creditChange < 0 ? Math.abs(transaction.sick.creditChange).toFixed(2) : ''}</td>
-              <td>{transaction.sick?.formattedBalance || '0.00'}</td>
-              <td>{transaction.recordedBy}</td>
-            </tr>
-          ))}
-        </tbody>
+  {nonTeachingTransactions.map((transaction, index) => (
+    <tr key={index}>
+      <td>{transaction.formattedDate}</td>
+      <td className="text-start">
+        {transaction.description}
+        {transaction.type !== 'BALANCE' && (
+          <small className="text-muted d-block">
+            {transaction.type === 'INITIAL' ? 'Initial credit' : 
+             transaction.type === 'ACCRUAL' ? 'Monthly accrual' : 'Deduction'}
+          </small>
+        )}
+      </td>
+      <td>{transaction.vacation.earned > 0 ? formatCredit(transaction.vacation.earned) : ''}</td>
+      <td>{transaction.vacation.used > 0 ? formatCredit(transaction.vacation.used) : ''}</td>
+      <td>{transaction.vacation.formattedBalance}</td>
+      <td>{transaction.sick.earned > 0 ? formatCredit(transaction.sick.earned) : ''}</td>
+      <td>{transaction.sick.used > 0 ? formatCredit(transaction.sick.used) : ''}</td>
+      <td>{transaction.sick.formattedBalance}</td>
+      <td>{transaction.recordedBy}</td>
+    </tr>
+  ))}
+</tbody>
       </table>
     </div>
   </div>

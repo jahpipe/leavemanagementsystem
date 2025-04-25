@@ -109,26 +109,119 @@ router.get("/:status", async (req, res) => {
 
 // PUT /api/leaveapproval/:id/update
 router.put("/:id/update", async (req, res) => {
+  const connection = await db.getConnection();
+  await connection.beginTransaction();
+
   try {
-    const { id } = req.params;
-    let { status, rejection_message } = req.body;
-    status = status.toLowerCase();
+      const { id } = req.params;
+      let { status, rejection_message } = req.body;
+      status = status.toLowerCase();
 
-    if (!["approved", "rejected"].includes(status)) {
-      return res.status(400).json({ error: "Invalid status" });
-    }
+      if (!["approved", "rejected"].includes(status)) {
+          return res.status(400).json({ error: "Invalid status" });
+      }
 
-    const query = `UPDATE leave_applications SET status = ?, rejection_message = ? WHERE id = ?`;
-    const [result] = await db.execute(query, [status, rejection_message || "", id]);
+      // Get the leave application and its types
+      const [applications] = await connection.query(
+          `SELECT 
+              la.id,
+              la.user_id, 
+              la.number_of_days,
+              lat.leave_type_id
+           FROM leave_applications la
+           JOIN leave_application_types lat ON la.id = lat.leave_application_id
+           WHERE la.id = ?`,
+          [id]
+      );
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Leave request not found" });
-    }
+      if (applications.length === 0) {
+          await connection.rollback();
+          connection.release();
+          return res.status(404).json({ error: "Leave request not found" });
+      }
 
-    res.json({ message: `Leave request ${status} successfully` });
+      const application = applications[0];
+      const leaveTypeIds = applications.map(app => app.leave_type_id);
+
+      // Check current status
+      const [currentStatus] = await connection.query(
+          'SELECT status FROM leave_applications WHERE id = ?',
+          [id]
+      );
+
+      if (currentStatus[0].status !== 'Pending') {
+          await connection.rollback();
+          connection.release();
+          return res.status(400).json({ 
+              error: "Can only update pending leave requests" 
+          });
+      }
+
+      if (status === "approved") {
+          // Check balances before approval
+          for (const leaveTypeId of leaveTypeIds) {
+              const [balance] = await connection.query(
+                  `SELECT remaining_credit 
+                   FROM employee_leave_balances 
+                   WHERE user_id = ? AND leave_type_id = ?`,
+                  [application.user_id, leaveTypeId]
+              );
+
+              if (!balance.length || balance[0].remaining_credit < application.number_of_days) {
+                  await connection.rollback();
+                  connection.release();
+                  return res.status(400).json({ 
+                      error: `Insufficient leave balance for leave type ${leaveTypeId}` 
+                  });
+              }
+          }
+
+          // Deduct balances only when approved
+          for (const leaveTypeId of leaveTypeIds) {
+              await connection.query(
+                  `UPDATE employee_leave_balances 
+                   SET used_credit = used_credit + ?, 
+                       remaining_credit = remaining_credit - ? 
+                   WHERE user_id = ? AND leave_type_id = ?`,
+                  [application.number_of_days, application.number_of_days, 
+                   application.user_id, leaveTypeId]
+              );
+          }
+      }
+
+      // Update application status
+      const [result] = await connection.query(
+          `UPDATE leave_applications 
+           SET status = ?, 
+               rejection_message = ?,
+               updated_at = NOW() 
+           WHERE id = ?`,
+          [status, rejection_message || null, id]
+      );
+
+      if (result.affectedRows === 0) {
+          await connection.rollback();
+          connection.release();
+          return res.status(404).json({ error: "Leave request not found" });
+      }
+
+      await connection.commit();
+      connection.release();
+
+      res.json({ 
+          success: true,
+          message: `Leave request ${status} successfully`,
+          updated: result.affectedRows
+      });
+
   } catch (error) {
-    console.error("Error updating leave request:", error);
-    res.status(500).json({ error: "Internal server error" });
+      await connection.rollback();
+      connection.release();
+      console.error("Error updating leave request:", error);
+      res.status(500).json({ 
+          error: "Internal server error",
+          details: error.message 
+      });
   }
 });
 

@@ -110,107 +110,129 @@ const LeaveApplicationForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validate required fields
     if (formData.leaveType.length === 0) {
-      alert("Please select at least one leave type.");
-      return;
+        alert("Please select at least one leave type.");
+        return;
     }
 
     if (formData.leaveType.includes("Other") && !formData.otherLeaveType.trim()) {
-      alert("Please specify the 'Other' leave type.");
-      return;
+        alert("Please specify the 'Other' leave type.");
+        return;
     }
 
     if (formData.inclusiveDates.length === 0) {
-      alert("Please enter at least one valid leave date.");
-      return;
+        alert("Please enter at least one valid leave date.");
+        return;
     }
 
     if (!userId) {
-      alert("User not logged in. Please log in to submit a leave application.");
-      return;
+        alert("User not logged in. Please log in to submit a leave application.");
+        return;
     }
 
     // Validate dependent fields
     if ((formData.leaveType.includes("Vacation Leave") || 
          formData.leaveType.includes("Special Privilege Leave")) && 
         !formData.location) {
-      alert("Please specify location for Vacation/Special Privilege Leave.");
-      return;
+        alert("Please specify location for Vacation/Special Privilege Leave.");
+        return;
     }
 
     if (formData.leaveType.includes("Sick Leave") && (!formData.illnessType || !formData.illnessDetails)) {
-      alert("Please specify illness details for Sick Leave.");
-      return;
+        alert("Please specify illness details for Sick Leave.");
+        return;
     }
 
     if (formData.leaveType.includes("Study Leave") && !formData.studyLeave) {
-      alert("Please specify study leave details.");
-      return;
+        alert("Please specify study leave details.");
+        return;
     }
 
+    // Calculate working days (excluding weekends)
+    const workingDays = formData.inclusiveDates.filter(dateStr => {
+        const date = new Date(dateStr);
+        const day = date.getDay();
+        return day !== 0 && day !== 6; // Not Sunday or Saturday
+    }).length;
+
+    // Map leave types to their IDs
     const leaveTypes = formData.leaveType.map((type) => LEAVE_TYPE_IDS[type]);
 
+    // Prepare payload
     const payload = {
-      user_id: userId,
-      leave_types: leaveTypes,
-      other_leave_type: formData.otherLeaveType || null,
-      leave_details: JSON.stringify({
+        user_id: userId,
+        leave_types: leaveTypes,
+        other_leave_type: formData.otherLeaveType || null,
+        leave_details: JSON.stringify({
+            location: formData.location || null,
+            abroadDetails: formData.abroadDetails || null,
+            illnessType: formData.illnessType || null,
+            illnessDetails: formData.illnessDetails || null,
+            studyLeave: formData.studyLeave || null,
+        }),
+        number_of_days: workingDays, // Use calculated working days instead of form input
         location: formData.location || null,
-        abroadDetails: formData.abroadDetails || null,
-        illnessType: formData.illnessType || null,
-        illnessDetails: formData.illnessDetails || null,
-        studyLeave: formData.studyLeave || null,
-      }),
-      number_of_days: formData.numberOfDays,
-      location: formData.location || null,
-      abroad_details: formData.abroadDetails || null,
-      illness_type: formData.illnessType || null,
-      illness_details: formData.illnessDetails || null,
-      study_leave: formData.studyLeave || null,
-      monetization: formData.monetization || null,
-      commutation: formData.commutation || null,
-      status: "Pending",
-      leave_dates: formData.inclusiveDates,
-      monetize_leave_credits: formData.monetizeLeaveCredits,
-      terminal_leave: formData.terminalLeave,
+        abroad_details: formData.abroadDetails || null,
+        illness_type: formData.illnessType || null,
+        illness_details: formData.illnessDetails || null,
+        study_leave: formData.studyLeave || null,
+        monetization: formData.monetization || false,
+        commutation: formData.commutation || false,
+        status: "Pending",
+        leave_dates: formData.inclusiveDates.map(date => {
+            const d = new Date(date);
+            return d.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+        }),
+        monetize_leave_credits: formData.monetizeLeaveCredits,
+        terminal_leave: formData.terminalLeave,
     };
 
     try {
-      const response = await fetch("http://localhost:8000/api/leaverequest/apply-leave", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        alert("Leave application submitted successfully!");
-        setFormData({
-          leaveType: [],
-          otherLeaveType: "",
-          location: "",
-          abroadDetails: "",
-          illnessType: "",
-          illnessDetails: "",
-          studyLeave: "",
-          monetization: "",
-          commutation: "",
-          numberOfDays: "",
-          inclusiveDatesCommaSeparated: "",
-          inclusiveDates: [],
-          monetizeLeaveCredits: false,
-          terminalLeave: false,
+        const response = await fetch("http://localhost:8000/api/leaverequest/apply-leave", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
         });
-      } else {
-        const errorData = await response.json();
-        alert(`Failed to submit leave application: ${errorData.error}`);
-      }
+
+        if (response.ok) {
+            alert("Leave application submitted successfully! Waiting for approval.");
+            // Reset form
+            setFormData({
+                leaveType: [],
+                otherLeaveType: "",
+                location: "",
+                abroadDetails: "",
+                illnessType: "",
+                illnessDetails: "",
+                studyLeave: "",
+                monetization: "",
+                commutation: "",
+                numberOfDays: "",
+                inclusiveDatesCommaSeparated: "",
+                inclusiveDates: [],
+                monetizeLeaveCredits: false,
+                terminalLeave: false,
+            });
+        } else {
+            const errorData = await response.json();
+            if (errorData.error && errorData.leaveTypeId) {
+                // Show specific balance error if available
+                const leaveTypeName = Object.keys(LEAVE_TYPE_IDS).find(
+                    key => LEAVE_TYPE_IDS[key] === errorData.leaveTypeId
+                );
+                alert(`Insufficient ${leaveTypeName} balance. Available: ${errorData.available}, Required: ${errorData.required}`);
+            } else {
+                alert(`Failed to submit leave application: ${errorData.error || "Unknown error"}`);
+            }
+        }
     } catch (error) {
-      console.error("Error submitting leave application:", error);
-      alert("An error occurred while submitting the leave application.");
+        console.error("Error submitting leave application:", error);
+        alert("An error occurred while submitting the leave application. Please try again.");
     }
-  };
+};
 
   // Helper function to check if a leave type is selected
   const isLeaveTypeSelected = (type) => formData.leaveType.includes(type);
