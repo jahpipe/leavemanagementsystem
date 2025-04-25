@@ -19,7 +19,13 @@ const MyLeaveBalance = () => {
           return res.json();
         })
         .then((data) => {
-          setBalances(data);
+          // Process the data to ensure correct calculations
+          const processedData = data.map(item => ({
+            ...item,
+            // Calculate used credit based on total and remaining
+            used_credit: item.total_credit - item.remaining_credit
+          }));
+          setBalances(processedData);
           setLoading(false);
         })
         .catch((error) => {
@@ -28,6 +34,11 @@ const MyLeaveBalance = () => {
         });
     }
   }, [userId]);
+
+  // Format numbers to 2 decimal places
+  const formatNumber = (num) => {
+    return parseFloat(num).toFixed(2);
+  };
 
   // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -63,9 +74,9 @@ const MyLeaveBalance = () => {
                   currentItems.map((balance, index) => (
                     <tr key={index}>
                       <td>{balance.leaveTypeName}</td>
-                      <td>{balance.total_credit}</td>
-                      <td>{balance.used_credit}</td>
-                      <td>{balance.remaining_credit}</td>
+                      <td>{formatNumber(balance.total_credit)}</td>
+                      <td>{formatNumber(balance.used_credit)}</td>
+                      <td>{formatNumber(balance.remaining_credit)}</td>
                     </tr>
                   ))
                 )}

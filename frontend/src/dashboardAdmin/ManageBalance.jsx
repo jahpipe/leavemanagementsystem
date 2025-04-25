@@ -390,7 +390,7 @@ const ManageBalance = () => {
                           <th style={{ width: '25%' }}>Employee</th>
                           <th style={{ width: '20%' }}>Leave Type</th>
                           <th style={{ width: '15%' }} className="text-end">Total</th>
-                          <th style={{ width: '15%' }} className="text-end">Used</th>
+  
                           <th style={{ width: '15%' }} className="text-end">Balance</th>
                           <th style={{ width: '10%' }}>Actions</th>
                         </tr>
@@ -421,16 +421,18 @@ const ManageBalance = () => {
                                   <span className="badge bg-info text-dark">
                                     {balance.leaveTypeName}
                                   </span>
-                                </td>
-                                <td className="text-end">{balance.total_credit}</td>
-                                <td className="text-end">{balance.used_credit}</td>
-                                <td className={`text-end fw-bold ${
-                                  balance.remaining_credit < 5 ? "text-danger" : "text-success"
-                                }`}>
-                                  {balance.remaining_credit}
-                                </td>
-                                <td className="align-middle">
-                                  <div className="d-flex">
+                                  </td>
+                               <td className="text-end">
+                                    {Number(balance.total_credit).toFixed(2)}
+                                  </td>
+                                
+                                  <td className={`text-end fw-bold ${
+                                    balance.remaining_credit < 5 ? "text-danger" : "text-success"
+                                  }`}>
+                                    {Number(balance.remaining_credit).toFixed(2)}
+                                  </td>
+                                     <td className="align-middle">
+                                     <div className="d-flex">
                                     <button
                                       className="btn btn-sm btn-outline-primary me-1"
                                       onClick={() => handleMonthlyAccrual(balance)}

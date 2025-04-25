@@ -64,6 +64,11 @@ const leaveTypes = [
   </p>
 ))}
   
+const currentVacationBalance = Number(leaveRequest.vacationLeave?.remaining_credit || 0);
+const currentSickBalance = Number(leaveRequest.sickLeave?.remaining_credit || 0);
+const daysApplied = Number(leaveRequest.leave_dates.length);
+
+
   return (
     <div className="bg-light p-3" style={{ minHeight: "100vh" }}>
       <div
@@ -84,7 +89,7 @@ const leaveTypes = [
           <div className="row">
             <div className="col-md-6">
               <p className="small font-weight-bold">1. AGENCY/SCHOOL</p>
-              <p>School: {leaveRequest.school_assignment}</p> 
+              <p> {leaveRequest.school_assignment}</p> 
             </div>
             <div className="col-md-6">
               <div style={{ display: "flex", alignItems: "center" }}>
@@ -301,10 +306,10 @@ const leaveTypes = [
     <tr className="border border-black">
       <td className="border border-black p-2 text-sm">Total Earned</td>
       <td className="border border-black p-2 text-sm text-center">
-        {leaveRequest.vacationLeave?.total_credit?.toFixed(2) || "0.00"}
+        {leaveRequest.vacationLeave?.remaining_credit?.toFixed(2) || "0.00"}
       </td>
       <td className="border border-black p-2 text-sm text-center">
-        {leaveRequest.sickLeave?.total_credit?.toFixed(2) || "0.00"}
+        {leaveRequest.sickLeave?.remaining_credit?.toFixed(2) || "0.00"}
       </td>
     </tr>
     <tr className="border border-black">
@@ -321,20 +326,18 @@ const leaveTypes = [
     <tr className="border border-black">
       <td className="border border-black p-2 text-sm">Balance</td>
       <td className="border border-black p-2 text-sm text-center">
-        {(() => {
-          const totalCredit = Number(leaveRequest.vacationLeave?.total_credit || 0);
-          const lessApplication = leaveRequest.leave_types.includes("Vacation Leave") ? 
-            Number(leaveRequest.leave_dates.length) : 0;
-          return (totalCredit - lessApplication).toFixed(2);
-        })()}
+        {(
+          Number(leaveRequest.vacationLeave?.remaining_credit || 0) - 
+          (leaveRequest.leave_types.includes("Vacation Leave") ? 
+            Number(leaveRequest.leave_dates.length) : 0)
+        ).toFixed(2)}
       </td>
       <td className="border border-black p-2 text-sm text-center">
-        {(() => {
-          const totalCredit = Number(leaveRequest.sickLeave?.total_credit || 0);
-          const lessApplication = leaveRequest.leave_types.includes("Sick Leave") ? 
-            Number(leaveRequest.leave_dates.length) : 0;
-          return (totalCredit - lessApplication).toFixed(2);
-        })()}
+        {(
+          Number(leaveRequest.sickLeave?.remaining_credit || 0) - 
+          (leaveRequest.leave_types.includes("Sick Leave") ? 
+            Number(leaveRequest.leave_dates.length) : 0)
+        ).toFixed(2)}
       </td>
     </tr>
   </tbody>
@@ -344,7 +347,7 @@ const leaveTypes = [
                 </div>
               </div>
               <br />
-              <p className="small text-center">(JULIUS CESAR L. DE LA CERNA)</p>
+              <p className="small text-center">JULIUS CESAR L. DE LA CERNA</p>
               <hr />
               <p className="small text-center font-bold">AO IV / HRMO</p>
             </div>
@@ -366,7 +369,7 @@ const leaveTypes = [
               ___________________________________________________<br />
               ___________________________________________________</p>
               <br />
-              <p className="small text-center">(JOSEMLIO P. RUIZ EdD, CESE)</p>
+              <p className="small text-center">JOSEMLIO P. RUIZ EdD, CESE</p>
               <hr />
               <p className="small text-center">Assistant Schools Division Superintendent</p>
             </div>
@@ -393,7 +396,7 @@ const leaveTypes = [
             <br />
           </div>
           <div className="mt-2 text-center">
-            <p className="small">(MANUEL P. ALBAÑO PHD, CESO V)</p>
+            <p className="small">MANUEL P. ALBAÑO PHD, CESO V</p>
             <p className="small">Schools Division Superintendent</p>
           </div>
         </div>
