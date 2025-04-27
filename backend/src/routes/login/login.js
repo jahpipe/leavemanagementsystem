@@ -3,7 +3,6 @@ const router = express.Router();
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
 
-
 const db = mysql.createPool({
     host: 'localhost',
     user: 'root',
@@ -17,7 +16,7 @@ router.post('/', async (req, res) => {
         const { username, password, role } = req.body;
         console.log('🔍 Login attempt:', { username, role });
 
-        const query = 'SELECT id, fullName, role, password FROM users WHERE username = ? AND role = ?';
+        const query = 'SELECT id, fullName, role, password, profileIcon FROM users WHERE username = ? AND role = ?';
         const [results] = await db.query(query, [username, role]);
 
         if (results.length === 0) {
@@ -26,7 +25,6 @@ router.post('/', async (req, res) => {
         }
 
         const user = results[0];
-
 
         if (!user.password.startsWith("$2b$")) {
             console.log(' Password format invalid (not bcrypt-hashed)');
@@ -43,6 +41,7 @@ router.post('/', async (req, res) => {
                     id: user.id,
                     fullName: user.fullName,
                     role: user.role,
+                    profileIcon: user.profileIcon, // Include profileIcon in the response
                 },
             });
         } else {
