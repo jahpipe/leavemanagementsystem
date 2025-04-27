@@ -282,99 +282,102 @@ const daysApplied = Number(leaveRequest.leave_dates.length);
 </div>
         </div>
       </div>
-        {/* Section 4: Certification of Leave Credits and Recommendation */}
-        <div className="border-bottom border-secondary py-2">
-          <p className="small font-weight-bold text-center">7. DETAILS OF ACTION ON APPLICATION</p>
-          <hr />
-          <hr />
-          <div className="row mt-2">
-            <div className="col-md-6 pr-2">
-              <p className="small font-weight-bold">7A. CERTIFICATION OF LEAVE CREDITS</p>
-              <div className="row">
-                <p className="col small text-center">As of _________________________</p>
-              </div>
-              <div className="">   
-                <div className=" ">
-                  <div className="">
-                  <table className="table-auto w-full border-collapse border border-black">
-  <tbody>
-    <tr className="border border-black">
-      <td className="border border-black p-2 text-sm">&nbsp;</td>
-      <td className="border border-black p-2 text-sm">Vacation Leave</td>
-      <td className="border border-black p-2 text-sm">Sick Leave</td>
-    </tr>
-    <tr className="border border-black">
-      <td className="border border-black p-2 text-sm">Total Earned</td>
-      <td className="border border-black p-2 text-sm text-center">
-        {leaveRequest.vacationLeave?.remaining_credit?.toFixed(2) || "0.00"}
-      </td>
-      <td className="border border-black p-2 text-sm text-center">
-        {leaveRequest.sickLeave?.remaining_credit?.toFixed(2) || "0.00"}
-      </td>
-    </tr>
-    <tr className="border border-black">
-      <td className="border border-black p-2 text-sm">Less this application</td>
-      <td className="border border-black p-2 text-sm text-center">
-        {leaveRequest.leave_types.includes("Vacation Leave") ? 
-          Number(leaveRequest.leave_dates.length).toFixed(2) : "0.00"}
-      </td>
-      <td className="border border-black p-2 text-sm text-center">
-        {leaveRequest.leave_types.includes("Sick Leave") ? 
-          Number(leaveRequest.leave_dates.length).toFixed(2) : "0.00"}
-      </td>
-    </tr>
-    <tr className="border border-black">
-      <td className="border border-black p-2 text-sm">Balance</td>
-      <td className="border border-black p-2 text-sm text-center">
-        {(
-          Number(leaveRequest.vacationLeave?.remaining_credit || 0) - 
-          (leaveRequest.leave_types.includes("Vacation Leave") ? 
-            Number(leaveRequest.leave_dates.length) : 0)
-        ).toFixed(2)}
-      </td>
-      <td className="border border-black p-2 text-sm text-center">
-        {(
-          Number(leaveRequest.sickLeave?.remaining_credit || 0) - 
-          (leaveRequest.leave_types.includes("Sick Leave") ? 
-            Number(leaveRequest.leave_dates.length) : 0)
-        ).toFixed(2)}
-      </td>
-    </tr>
-  </tbody>
-</table>
-
-                  </div>
-                </div>
-              </div>
-              <br />
-              <p className="small text-center">JULIUS CESAR L. DE LA CERNA</p>
-              <hr />
-              <p className="small text-center font-bold">AO IV / HRMO</p>
-            </div>
-            <div className="col-md-6 pl-2">
-              <p className="small font-weight-bold">7B. RECOMMENDATION</p>
-              <div className="small">
-                <p>
-                  <input type="checkbox" className="mr-2" /> For approval
-                </p>
-                <p>
-                  <input type="checkbox" className="mr-2" /> For disapproval due to:{" "}
-                  <span className="underline">_________________________</span>
-                </p>
-              </div>
-              <p className="small mt-2">___________________________________________________ <br />
-              ___________________________________________________<br />
-              ___________________________________________________<br />
-              ___________________________________________________<br />
-              ___________________________________________________<br />
-              ___________________________________________________</p>
-              <br />
-              <p className="small text-center">JOSEMLIO P. RUIZ EdD, CESE</p>
-              <hr />
-              <p className="small text-center">Assistant Schools Division Superintendent</p>
-            </div>
-          </div>
+        {/* Section 7: DETAILS OF ACTION ON APPLICATION */}
+<div className="border-bottom border-secondary py-2">
+  <p className="small font-weight-bold text-center">7. DETAILS OF ACTION ON APPLICATION</p>
+  <hr />
+  <hr />
+  <div className="row mt-2">
+    {/* Section 7A: CERTIFICATION OF LEAVE CREDITS */}
+    <div className="col-md-6 pr-2">
+      <p className="small font-weight-bold">7A. CERTIFICATION OF LEAVE CREDITS</p>
+      <div className="row">
+        <p className="col small text-center">As of _________________________</p>
+      </div>
+      <div className="">
+        <div className="">
+          <table className="table-auto w-full border-collapse border border-black">
+            <tbody>
+              <tr className="border border-black">
+                <td className="border border-black p-2 text-sm">&nbsp;</td>
+                <td className="border border-black p-2 text-sm">Vacation Leave</td>
+                <td className="border border-black p-2 text-sm">Sick Leave</td>
+              </tr>
+              <tr className="border border-black">
+                <td className="border border-black p-2 text-sm">Total Earned</td>
+                <td className="border border-black p-2 text-sm text-center">
+                  {leaveRequest.vacationLeave?.remaining_credit?.toFixed(2) || "0.00"}
+                </td>
+                <td className="border border-black p-2 text-sm text-center">
+                  {leaveRequest.sickLeave?.remaining_credit?.toFixed(2) || "0.00"}
+                </td>
+              </tr>
+              <tr className="border border-black">
+                <td className="border border-black p-2 text-sm">Less this application</td>
+                <td className="border border-black p-2 text-sm text-center">
+                  {leaveRequest.leave_types.includes("Vacation Leave") ? 
+                    Number(leaveRequest.leave_dates.length).toFixed(2) : "0.00"}
+                </td>
+                <td className="border border-black p-2 text-sm text-center">
+                  {leaveRequest.leave_types.includes("Sick Leave") ? 
+                    Number(leaveRequest.leave_dates.length).toFixed(2) : "0.00"}
+                </td>
+              </tr>
+              <tr className="border border-black">
+                <td className="border border-black p-2 text-sm">Balance</td>
+                <td className="border border-black p-2 text-sm text-center">
+                  {(
+                    Number(leaveRequest.vacationLeave?.remaining_credit || 0) -
+                    (leaveRequest.leave_types.includes("Vacation Leave") ? 
+                      Number(leaveRequest.leave_dates.length) : 0)
+                  ).toFixed(2)}
+                </td>
+                <td className="border border-black p-2 text-sm text-center">
+                  {(
+                    Number(leaveRequest.sickLeave?.remaining_credit || 0) -
+                    (leaveRequest.leave_types.includes("Sick Leave") ? 
+                      Number(leaveRequest.leave_dates.length) : 0)
+                  ).toFixed(2)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+      </div>
+      <br />
+      <p className="small text-center">JULIUS CESAR L. DE LA CERNA</p>
+      <hr />
+      <p className="small text-center font-bold">AO IV / HRMO</p>
+    </div>
+
+    {/* Section 7B: RECOMMENDATION */}
+    <div className="col-md-6 pl-2">
+      <p className="small font-weight-bold">7B. RECOMMENDATION</p>
+      <div className="small">
+        <p>
+          <input type="checkbox" className="mr-2" /> For approval
+        </p>
+        <p>
+          <input type="checkbox" className="mr-2" /> For disapproval due to:{" "}
+          <span className="underline">_________________________</span>
+        </p>
+      </div>
+      <p className="small mt-2">
+        ____________________________________________ <br />
+        ____________________________________________ <br />
+        ____________________________________________ <br />
+        ____________________________________________ <br />
+        ____________________________________________ <br />
+        ____________________________________________
+      </p>
+      <br />
+      <p className="small text-center">JOSEMLIO P. RUIZ EdD, CESE</p>
+      <hr />
+      <p className="small text-center">Assistant Schools Division Superintendent</p>
+    </div>
+  </div>
+</div>
+
 
         {/* Section 5: Approval and Disapproval */}
         <div className="border-bottom border-secondary py-2">

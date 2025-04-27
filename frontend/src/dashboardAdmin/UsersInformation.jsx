@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 
-// Utility functions
 const formatDate = (dateString) => {
   if (!dateString) return "N/A";
   try {
     const date = new Date(dateString);
     return isNaN(date.getTime()) ? "Invalid Date" : 
       date.toLocaleDateString("en-US", { 
-        month: "long", 
+        month: "short", // Changed from "long" to "short" for compactness
         day: "numeric", 
         year: "numeric" 
       });

@@ -1,5 +1,5 @@
 const express = require("express");
-const mysql = require("mysql2/promise"); 
+const mysql = require("mysql2/promise");
 const router = express.Router();
 
 
@@ -8,7 +8,7 @@ const db = mysql.createPool({
   user: "root",
   password: "",
   database: "leave_db",
-  port: 3306, 
+  port: 3306,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -39,10 +39,10 @@ router.post("/apply-leave", async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!user_id || !Array.isArray(leave_types) || leave_types.length === 0 || 
+    if (!user_id || !Array.isArray(leave_types) || leave_types.length === 0 ||
         !Array.isArray(leave_dates) || leave_dates.length === 0) {
-      return res.status(400).json({ 
-        error: "user_id, at least one leave_type, and at least one leave_date are required" 
+      return res.status(400).json({
+        error: "user_id, at least one leave_type, and at least one leave_date are required"
       });
     }
 
@@ -57,8 +57,8 @@ router.post("/apply-leave", async (req, res) => {
 
     // Check leave balances before proceeding
     const [balances] = await connection.execute(
-      `SELECT leave_type_id, total_credit, used_credit, remaining_credit 
-       FROM employee_leave_balances 
+      `SELECT leave_type_id, total_credit, used_credit, remaining_credit
+       FROM employee_leave_balances
        WHERE user_id = ? AND leave_type_id IN (?)`,
       [user_id, leave_types]
     );
@@ -77,22 +77,22 @@ router.post("/apply-leave", async (req, res) => {
 
     // Insert leave application
     const [result] = await connection.execute(
-      `INSERT INTO leave_applications 
-       (user_id, other_leave_type, leave_details, number_of_days, location, 
-        abroad_details, illness_details, study_leave, monetization, commutation, 
-        status, created_at) 
+      `INSERT INTO leave_applications
+       (user_id, other_leave_type, leave_details, number_of_days, location,
+        abroad_details, illness_details, study_leave, monetization, commutation,
+        status, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
-        user_id, 
-        other_leave_type || null, 
-        leave_details || null, 
-        number_of_days, 
-        location || null, 
-        abroad_details || null, 
-        illness_details || null, 
-        study_leave, 
-        monetization, 
-        commutation, 
+        user_id,
+        other_leave_type || null,
+        leave_details || null,
+        number_of_days,
+        location || null,
+        abroad_details || null,
+        illness_details || null,
+        study_leave,
+        monetization,
+        commutation,
         status
       ]
     );
@@ -117,44 +117,17 @@ router.post("/apply-leave", async (req, res) => {
       );
     }
 
-    // Update leave balances with particulars and dates
-    const latestLeaveDate = new Date(Math.max(...formattedLeaveDates.map(d => new Date(d))));
-    
-    for (const leaveTypeId of leave_types) {
-      await connection.execute(
-        `UPDATE employee_leave_balances 
-         SET used_credit = used_credit + ?,
-             remaining_credit = remaining_credit - ?,
-             last_application_date = ?,
-             particulars = COALESCE(?, particulars),
-             recorded_date = NOW()
-         WHERE user_id = ? AND leave_type_id = ?`,
-        [
-          number_of_days,
-          number_of_days,
-          latestLeaveDate,
-          particulars, // Will keep existing if null is provided
-          user_id,
-          leaveTypeId
-        ]
-      );
-    }
-
     await connection.commit();
-    
-    res.status(201).json({ 
+
+    res.status(201).json({
       message: "Leave application submitted successfully",
       leave_application_id,
-      updated_balances: balances.map(b => ({
-        leave_type_id: b.leave_type_id,
-        new_balance: b.remaining_credit - number_of_days
-      }))
     });
 
   } catch (error) {
     if (connection) await connection.rollback();
     console.error("Error submitting leave application:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: error.message || "Internal server error",
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
@@ -171,9 +144,9 @@ router.get("/leave-requests/:userId", async (req, res) => {
     const userId = req.params.userId;
 
     const query = `
-      SELECT la.*, 
-          GROUP_CONCAT(DISTINCT DATE_FORMAT(lad.leave_date, '%Y-%m-%d')) AS leave_dates,
-          GROUP_CONCAT(DISTINCT lt.name) AS leave_types
+      SELECT la.*,
+           GROUP_CONCAT(DISTINCT DATE_FORMAT(lad.leave_date, '%Y-%m-%d')) AS leave_dates,
+           GROUP_CONCAT(DISTINCT lt.name) AS leave_types
       FROM leave_applications la
       LEFT JOIN leave_dates lad ON la.id = lad.leave_application_id
       LEFT JOIN leave_application_types lat ON la.id = lat.leave_application_id
@@ -198,7 +171,7 @@ router.get("/leave-requests/:userId", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
 
   } finally {
-    if (connection) connection.release(); 
+    if (connection) connection.release();
   }
 });
 
@@ -242,8 +215,8 @@ router.put("/cancel-leave/:id", async (req, res) => {
 
     // 2. Get associated leave types
     const [leaveTypes] = await connection.query(
-      `SELECT leave_type_id 
-       FROM leave_application_types 
+      `SELECT leave_type_id
+       FROM leave_application_types
        WHERE leave_application_id = ?`,
       [leaveId]
     );
@@ -259,7 +232,7 @@ router.put("/cancel-leave/:id", async (req, res) => {
     // 3. Restore balances for each leave type
     for (const { leave_type_id } of leaveTypes) {
       console.log(`Restoring balance for leave type ${leave_type_id}`);
-      
+
       const [updateResult] = await connection.query(
         `UPDATE employee_leave_balances
          SET used_credit = used_credit - ?,
@@ -295,8 +268,8 @@ router.put("/cancel-leave/:id", async (req, res) => {
 
     await connection.commit();
     console.log("Leave cancellation successful");
-    
-    res.json({ 
+
+    res.json({
       success: true,
       message: "Leave request cancelled successfully",
       restored_days: leaveRequest.number_of_days
@@ -305,8 +278,8 @@ router.put("/cancel-leave/:id", async (req, res) => {
   } catch (error) {
     console.error("Database error:", error);
     if (connection) await connection.rollback();
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       error: "Internal server error",
       details: process.env.NODE_ENV === 'development' ? {
         message: error.message,
@@ -318,8 +291,8 @@ router.put("/cancel-leave/:id", async (req, res) => {
   } finally {
     if (connection) {
       console.log("Releasing database connection");
-      connection.release();
-    }
+        connection.release();
+      }
   }
 });
 

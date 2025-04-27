@@ -115,8 +115,8 @@ const LeaveApplicationForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted');
-
+    console.log("Form submitted");
+  
     const submitBtn = e.currentTarget.querySelector('button[type="submit"]');
     submitBtn.disabled = true;
   
@@ -143,11 +143,12 @@ const LeaveApplicationForm = () => {
   
     // Calculate ACTUAL leave days (1 date = 1 day, regardless of weekends)
     const leaveDays = formData.inclusiveDates.length;
+    console.log(`Number of leave days applied: ${leaveDays}`); // Log the number of days applied
   
     // Map leave types to their IDs
     const leaveTypes = formData.leaveType.map((type) => LEAVE_TYPE_IDS[type]);
   
-    // Prepare payload - simplified to ensure 1 date = 1 day deduction
+    // Prepare payload
     const payload = {
       user_id: userId,
       leave_types: leaveTypes,
@@ -159,24 +160,21 @@ const LeaveApplicationForm = () => {
         illnessDetails: formData.illnessDetails || null,
         studyLeave: formData.studyLeave || null,
       }),
-      number_of_days: leaveDays, // Use simple count of dates
-      status: "Pending",
-      leave_dates: formData.inclusiveDates.map(dateStr => {
-        // Parse date correctly regardless of timezone
-        const parts = dateStr.split('/');
-        // Note: months are 0-indexed in JavaScript Date
+      number_of_days: leaveDays,
+      status: "Pending", // Ensure the status is "Pending" when submitted
+      leave_dates: formData.inclusiveDates.map((dateStr) => {
+        const parts = dateStr.split("/");
         const dateObj = new Date(parts[2], parts[0] - 1, parts[1]);
-        
-        // Format as YYYY-MM-DD without timezone conversion
         const year = dateObj.getFullYear();
-        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const day = String(dateObj.getDate()).padStart(2, '0');
-        
+        const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+        const day = String(dateObj.getDate()).padStart(2, "0");
         return `${year}-${month}-${day}`;
       }),
       monetize_leave_credits: formData.monetizeLeaveCredits,
       terminal_leave: formData.terminalLeave,
     };
+  
+    console.log("Payload being sent to backend:", payload); // Log the payload
   
     try {
       const response = await fetch("http://localhost:8000/api/leaverequest/apply-leave", {
@@ -187,9 +185,10 @@ const LeaveApplicationForm = () => {
         body: JSON.stringify(payload),
       });
   
+      console.log("Backend response:", response); // Log the backend response
+  
       if (response.ok) {
         alert("Leave application submitted successfully! Waiting for approval.");
-        // Reset form
         setFormData({
           leaveType: [],
           otherLeaveType: "",
@@ -208,20 +207,24 @@ const LeaveApplicationForm = () => {
         });
       } else {
         const errorData = await response.json();
+        console.error("Error response from backend:", errorData); // Log error response
         if (errorData.error && errorData.leaveTypeId) {
           const leaveTypeName = Object.keys(LEAVE_TYPE_IDS).find(
-            key => LEAVE_TYPE_IDS[key] === errorData.leaveTypeId
+            (key) => LEAVE_TYPE_IDS[key] === errorData.leaveTypeId
           );
-          alert(`Insufficient ${leaveTypeName} balance. Available: ${errorData.available}, Required: ${errorData.required}`);
+          alert(
+            `Insufficient ${leaveTypeName} balance. Available: ${errorData.available}, Required: ${errorData.required}`
+          );
         } else {
           alert(`Failed to submit leave application: ${errorData.error || "Unknown error"}`);
         }
       }
     } catch (error) {
-      console.error("Error submitting leave application:", error);
+      console.error("Error submitting leave application:", error); // Log any unexpected errors
       alert("An error occurred while submitting the leave application. Please try again.");
     }
   };
+  
 
   // Helper function to check if a leave type is selected
   const isLeaveTypeSelected = (type) => formData.leaveType.includes(type);

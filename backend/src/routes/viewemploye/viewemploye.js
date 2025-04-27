@@ -272,6 +272,18 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Check if the username already exists
+    const [existingUser] = await connection.execute(`
+      SELECT id FROM users WHERE username = ?
+    `, [username]);
+
+    if (existingUser.length > 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Username already exists' 
+      });
+    }
+
     // Determine if teaching or non-teaching staff
     const isTeaching = position.toLowerCase().includes('teacher') || 
                       position.toLowerCase().includes('faculty') ||
@@ -297,37 +309,52 @@ router.post('/', async (req, res) => {
 
     // Create default leave balances for the new employee
     if (role === 'employee') {
-      // Get only Vacation and Sick leave types
-      const [leaveTypes] = await connection.query(
-        `SELECT id, name FROM leave_types 
-         WHERE name IN ('Vacation Leave', 'Sick Leave')`
-      );
+      const [leaveTypes] = await connection.query(`
+        SELECT id, name FROM leave_types 
+        WHERE name IN ('Vacation Leave', 'Sick Leave')
+      `);
       
       for (const lt of leaveTypes) {
         let initialCredit = 0; 
         
-        // Set initial credits based on leave type and user type
         if (lt.name.toLowerCase() === 'vacation leave') {
           initialCredit = isTeaching ? 15 : 15;
         } else if (lt.name.toLowerCase() === 'sick leave') {
           initialCredit = isTeaching ? 15 : 15;
         }
 
-        await connection.query(`
-          INSERT INTO employee_leave_balances 
-          (user_id, leave_type_id, total_credit, used_credit, remaining_credit, period, recorded_date)
-          VALUES (?, ?, ?, 0, ?, ?, NOW())
-        `, [userId, lt.id, initialCredit, initialCredit, effective_date]);
+        // Check if the leave balance already exists
+        const [existingBalance] = await connection.execute(`
+          SELECT id FROM employee_leave_balances 
+          WHERE user_id = ? AND leave_type_id = ?
+        `, [userId, lt.id]);
 
-        // For both teaching and non-teaching, add initial accruals using recorded_at
-        if (lt.name.toLowerCase() === 'vacation leave') {
-          const creditAmount = isTeaching ? 1.25 : 1.00;
-          for (let i = 0; i < 5; i++) { // Add 5 sample accruals
-            await connection.query(`
-              INSERT INTO leave_accrual_history 
-              (user_id, leave_type_id, credit_amount, recorded_at, recorded_by)
-              VALUES (?, ?, ?, NOW(), 'System')
-            `, [userId, lt.id, creditAmount]);
+        if (existingBalance.length === 0) {
+          // Insert the leave balance if it doesn't exist
+          await connection.query(`
+            INSERT INTO employee_leave_balances 
+            (user_id, leave_type_id, total_credit, used_credit, remaining_credit, period, recorded_date)
+            VALUES (?, ?, ?, 0, ?, ?, NOW())
+          `, [userId, lt.id, initialCredit, initialCredit, effective_date]);
+
+          // For both teaching and non-teaching, add initial accruals using recorded_at
+          if (lt.name.toLowerCase() === 'vacation leave') {
+            const creditAmount = isTeaching ? 1.25 : 1.00;
+            for (let i = 0; i < 5; i++) { // Add 5 sample accruals
+              // Check if accrual already exists for the same date
+              const [existingAccrual] = await connection.execute(`
+                SELECT id FROM leave_accrual_history 
+                WHERE user_id = ? AND leave_type_id = ? AND DATE(recorded_at) = ?
+              `, [userId, lt.id, formatDate(effective_date)]);
+
+              if (existingAccrual.length === 0) {
+                await connection.query(`
+                  INSERT INTO leave_accrual_history 
+                  (user_id, leave_type_id, credit_amount, recorded_at, recorded_by)
+                  VALUES (?, ?, ?, NOW(), 'System')
+                `, [userId, lt.id, creditAmount]);
+              }
+            }
           }
         }
       }

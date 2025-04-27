@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { FaCheck, FaTimes, FaPrint, FaPaperPlane } from "react-icons/fa";
-import PrintLeaveApplication from "./PrintLeaveApplication"; 
+import { FaCheck, FaTimes, FaPrint, FaSpinner } from "react-icons/fa";
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import PrintLeaveApplication from "./PrintLeaveApplication";
 
 const LeaveRequestApproval = () => {
   const [leaveRequests, setLeaveRequests] = useState([]);
@@ -9,8 +11,8 @@ const LeaveRequestApproval = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState(null);
-  const [messageText, setMessageText] = useState({});
-  const [showPrintDialog, setShowPrintDialog] = useState(false); // State to control print dialog visibility
+  const [showPrintDialog, setShowPrintDialog] = useState(false);
+  const [loadingStates, setLoadingStates] = useState({});
   const pageSize = 5;
 
   useEffect(() => {
@@ -26,6 +28,7 @@ const LeaveRequestApproval = () => {
         setLeaveRequests(data);
         setHasMore(data.length === pageSize);
       } catch (error) {
+        toast.error(`Error fetching leave requests: ${error.message}`);
         console.error("Error fetching leave requests:", error);
       }
     };
@@ -33,63 +36,40 @@ const LeaveRequestApproval = () => {
     fetchLeaveRequests();
   }, [tab, page]);
 
-  const handleAction = async (id, status) => {
-    let rejection_message = "";
-  
-    if (status === "Rejected") {
-        rejection_message = prompt("Please enter a reason for rejecting this request:");
-        if (!rejection_message) return;
-    }
-  
+  const handleAction = async (id, action) => {
+    setLoadingStates(prev => ({ ...prev, [id]: true }));
+
     try {
-        const response = await fetch(`http://localhost:8000/api/leaveapproval/${id}/update`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                status: status.toLowerCase(), 
-                rejection_message 
-            }),
-        });
-    
-        if (response.ok) {
-            // Refresh the list or remove the approved/rejected item
-            setLeaveRequests(prev => prev.filter(req => req.id !== id));
-            alert(`Leave request ${status.toLowerCase()} successfully!`);
-        } else {
-            const errorData = await response.json();
-            alert(`Error: ${errorData.error}`);
+      let body = { status: action.toLowerCase() };
+      
+      if (action === "Rejected") {
+        const rejection_message = prompt("Please enter a reason for rejecting this request:");
+        if (!rejection_message) {
+          setLoadingStates(prev => ({ ...prev, [id]: false }));
+          return;
         }
-    } catch (error) {
-        console.error("Error updating leave request:", error);
-        alert("An error occurred while updating the request.");
-    }
-};
-  
+        body.rejection_message = rejection_message;
+      }
 
-  const handleSendMessage = async (id) => {
-    const message = messageText[id];
-
-    if (!message) {
-      alert("Please enter a message before sending.");
-      return;
-    }
-
-    try {
-      const response = await fetch(`http://localhost:8000/api/leaveapproval/${id}/sendmessage`, {
-        method: "POST",
+      const response = await fetch(`http://localhost:8000/api/leaveapproval/${id}/update`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify(body),
       });
 
+      const result = await response.json();
+
       if (response.ok) {
-        alert("Message sent successfully!");
-        setMessageText((prev) => ({ ...prev, [id]: "" })); // Clear input after sending
+        toast.success(`Leave request ${action.toLowerCase()} successfully!`);
+        setLeaveRequests(prev => prev.filter(req => req.id !== id));
       } else {
-        alert("Failed to send message.");
+        toast.error(result.error || "Failed to update leave request");
       }
     } catch (error) {
-      console.error("Error sending message:", error);
-      alert("An error occurred while sending the message.");
+      toast.error("An error occurred while updating the request.");
+      console.error("Error updating leave request:", error);
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [id]: false }));
     }
   };
 
@@ -103,11 +83,24 @@ const LeaveRequestApproval = () => {
     setSelectedRequest(null);
   };
 
+  const getStatusBadge = (status) => {
+    const statusMap = {
+      pending: "warning",
+      approved: "success",
+      rejected: "danger"
+    };
+    return (
+      <span className={`badge bg-${statusMap[status.toLowerCase()]}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    );
+  };
+
   return (
     <div className="container mt-5">
       <div className="card shadow p-4">
         <h4 className="text-center mb-4 fw-bold">Leave Request Approval</h4>
-
+        
         <ul className="nav nav-tabs mb-3">
           {["pending", "approved", "rejected"].map((status) => (
             <li className="nav-item" key={status}>
@@ -125,147 +118,140 @@ const LeaveRequestApproval = () => {
         </ul>
 
         {leaveRequests.length === 0 ? (
-          <div className="alert alert-info text-center">No {tab} leave requests.</div>
+          <div className="alert alert-info text-center">
+            No {tab} leave requests found.
+          </div>
         ) : (
-          <div className="table-responsive">
-            <table className="table table-hover">
-              <thead className="table-dark">
-                <tr>
-                  <th>Employee Name</th>
-                  <th>Leave Types</th>
-                  <th>Leave Dates</th>
-                  {tab === "pending" ? <th>Action</th> : <th>Status</th>}
-                  {tab === "approved" && <th>Print</th>}
-                  {tab === "rejected" && <th>Message</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {leaveRequests.map((request) => (
-                  <tr key={request.id}>
-                    <td>{request.fullName} {request.lastName}</td>
-                    <td>{request.leave_types.join(", ")}</td>
-                    <td>{request.leave_dates.join(", ")}</td>
-                    
-                    {tab === "pending" ? (
-                      <td className="d-flex gap-2">
-                        <button
-                          className="btn btn-success btn-sm d-flex align-items-center"
-                          onClick={() => {
-                            if (window.confirm("Are you sure you want to approve this request?")) {
-                              handleAction(request.id, "Approved");
-                            }
-                          }}
-                        >
-                          <FaCheck className="me-1" />
-                        </button>
-                        <button
-                          className="btn btn-danger btn-sm d-flex align-items-center"
-                          onClick={() => {
-                            if (window.confirm("Are you sure you want to reject this request?")) {
-                              handleAction(request.id, "Rejected");
-                            }
-                          }}
-                        >
-                          <FaTimes className="me-1" />
-                        </button>
-                      </td>
-                    ) : (
-                      <td className={request.status.toLowerCase() === "approved" ? "text-success" : "text-danger"}>
-                        {request.status}
-                      </td>
-                    )}
-
-                    {tab === "approved" && (
-                      <td>
-                        <button
-                          className="btn btn-primary btn-sm"
-                          onClick={() => handlePrint(request)}
-                        >
-                          <FaPrint />
-                        </button>
-                      </td>
-                    )}
-
-                    {tab === "rejected" && (
-                      <td>
-                      {request.rejection_message ? (
-                        <span>{request.rejection_message}</span>
-                      ) : (
-                        <span className="text-muted">No message provided</span>
-                      )}
-                    </td>
-                    
-                    )}
+          <>
+            <div className="table-responsive">
+              <table className="table table-hover">
+                <thead className="table-dark">
+                  <tr>
+                    <th>Employee</th>
+                    <th>Leave Types</th>
+                    <th>Leave Dates</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {leaveRequests.map((request) => (
+                    <tr key={request.id}>
+                      <td>
+                        {request.fullName} {request.lastName}
+                        <div className="text-muted small">{request.position}</div>
+                      </td>
+                      <td>{request.leave_types.join(", ")}</td>
+                      <td>
+                        {request.leave_dates.map(date => (
+                          <div key={date}>{date}</div>
+                        ))}
+                      </td>
+                      <td>{getStatusBadge(request.status)}</td>
+                      <td>
+                        <div className="d-flex gap-2">
+                          {tab === "pending" && (
+                            <>
+                              <button
+                                className="btn btn-success btn-sm"
+                                onClick={() => {
+                                  if (window.confirm("Are you sure you want to approve this leave request?")) {
+                                    handleAction(request.id, "Approved");
+                                    toast.success("Leave request approved successfully!");
+                                  }
+                                }}
+                                disabled={loadingStates[request.id]}
+                              >
+                                {loadingStates[request.id] ? (
+                                  <FaSpinner className="fa-spin" />
+                                ) : (
+                                  <FaCheck />
+                                )}
+                              </button>
+                              <button
+                                className="btn btn-danger btn-sm"
+                                onClick={() => {
+                                  if (window.confirm("Are you sure you want to reject this leave request?")) {
+                                    handleAction(request.id, "Rejected");
+                                  }
+                                }}
+                                disabled={loadingStates[request.id]}
+                              >
+                                {loadingStates[request.id] ? (
+                                  <FaSpinner className="fa-spin" />
+                                ) : (
+                                  <FaTimes />
+                                )}
+                              </button>
+                            </>
+                          )}
+                          {tab === "approved" && (
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() => handlePrint(request)}
+                            >
+                              <FaPrint />
+                            </button>
+                          )}
+                        </div>
+                        {tab === "rejected" && request.rejection_message && (
+                          <div className="mt-2 small text-muted">
+                            <strong>Reason:</strong> {request.rejection_message}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-            <div className="d-flex justify-content-between">
+            <div className="d-flex justify-content-between mt-3">
               <button
-                className="btn btn-secondary btn-sm"
+                className="btn btn-secondary"
                 disabled={page === 1}
                 onClick={() => setPage(page - 1)}
               >
                 Previous
               </button>
+              <span>Page {page}</span>
               <button
-                className="btn btn-primary btn-sm"
+                className="btn btn-primary"
                 disabled={!hasMore}
                 onClick={() => setPage(page + 1)}
               >
                 Next
               </button>
             </div>
-          </div>
+          </>
         )}
       </div>
 
-      {/* Floating Modal for PrintLeaveApplication */}
+      {/* Print Dialog */}
       {showPrintDialog && selectedRequest && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: "white",
-              padding: "20px",
-              borderRadius: "8px",
-              width: "80%",
-              maxWidth: "800px",
-              maxHeight: "90vh",
-              overflowY: "auto",
-            }}
-          >
-            <button
-              style={{
-                position: "absolute",
-                top: "10px",
-                right: "10px",
-                background: "none",
-                border: "none",
-                fontSize: "1.5rem",
-                cursor: "pointer",
-              }}
-              onClick={closePrintDialog}
-            >
-              &times;
-            </button>
-            <PrintLeaveApplication leaveRequest={selectedRequest} />
-          </div>
-        </div>
-      )}
+  <div className="d-flex justify-content-center align-items-center" style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1050 }}>
+    <div
+      className="modal-content bg-white p-4 rounded"
+      style={{
+        width: '794px',  // A4 width in pixels
+        height: '1123px', // A4 height in pixels
+        maxWidth: '100%',  // Ensures responsiveness
+        maxHeight: '90vh',  // Prevents overflow from the screen
+        overflowY: 'auto', // Allows scroll if content overflows
+        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)' // Optional: Adds some shadow for floating effect
+      }}
+    >
+      <div className="d-flex justify-content-end">
+        <button className="btn btn-sm btn-outline-secondary" onClick={closePrintDialog}>
+          &times;
+        </button>
+      </div>
+      <PrintLeaveApplication leaveRequest={selectedRequest} />
+    </div>
+  </div>
+)}
+
+
     </div>
   );
 };
